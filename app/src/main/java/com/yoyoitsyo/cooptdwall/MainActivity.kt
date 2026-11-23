@@ -28,6 +28,7 @@ class MainActivity : Activity() {
     private lateinit var reminderList: LinearLayout
     private lateinit var sound: CheckBox
     private lateinit var vibration: CheckBox
+    private lateinit var soundStyle: Spinner
 
     private val bg = Color.rgb(9, 14, 25)
     private val panel = Color.rgb(19, 29, 47)
@@ -99,7 +100,7 @@ class MainActivity : Activity() {
         if (saved.isBlank()) {
             addReminderRow(72, "Blue Dragon", "LIB", 0)
             addReminderRow(76, "Ivy Whisper", "PLACE", 0)
-            addReminderRow(85, "Witch Doctor", "PLACE + SSS cooldown gem", 0)
+            addReminderRow(85, "Witch Doctor", "Activate", 0)
         } else {
             saved.lines().forEach { line ->
                 val parts = line.split("|")
@@ -125,6 +126,9 @@ class MainActivity : Activity() {
             isChecked = prefs.getBoolean("vibration", true)
         }
         reminderCard.addView(sound)
+        reminderCard.addView(TextView(this).apply { text = "ALERT SOUND"; textSize = 10f; setTextColor(muted); setPadding(2, 8, 2, 3) })
+        soundStyle = soundSpinner()
+        reminderCard.addView(soundStyle, LinearLayout.LayoutParams(-1, 44))
         reminderCard.addView(vibration)
         root.addView(reminderCard, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = 18 })
 
@@ -199,7 +203,7 @@ class MainActivity : Activity() {
     private fun numberField(key: String, fallback: Int): EditText = EditText(this).apply {
         setText(prefs.getInt(key, fallback).toString())
         inputType = 2
-        textSize = 16f
+        textSize = 13f
         setTextColor(Color.WHITE)
         setPadding(12, 5, 12, 5)
         background = gradient(intArrayOf(Color.rgb(10, 19, 32), Color.rgb(10, 19, 32)), 10, Color.rgb(43, 67, 88))
@@ -207,16 +211,40 @@ class MainActivity : Activity() {
 
     private fun actionButton(label: String, primary: Boolean, action: () -> Unit) = Button(this).apply {
         text = label
-        textSize = 12f
-        letterSpacing = 0.06f
+        textSize = 11f
+        letterSpacing = 0.02f
         typeface = Typeface.DEFAULT_BOLD
-        setTextColor(if (primary) Color.rgb(3, 18, 28) else Color.WHITE)
+        gravity = Gravity.CENTER
+        includeFontPadding = false
         backgroundTintList = null
         stateListAnimator = null
         background = if (primary) gradient(intArrayOf(cyan, Color.rgb(41, 168, 206)), 14)
             else gradient(intArrayOf(Color.rgb(29, 48, 70), Color.rgb(22, 36, 56)), 14, Color.rgb(49, 83, 109))
         isAllCaps = false
+        setTextColor(if (primary) Color.rgb(3, 18, 28) else Color.WHITE)
         setOnClickListener { action() }
+    }
+
+    private fun soundSpinner(): Spinner {
+        val options = listOf("Beep", "Alarm", "Urgent")
+        return Spinner(this).apply {
+            adapter = object : ArrayAdapter<String>(this@MainActivity, android.R.layout.simple_spinner_item, options) {
+                private fun styled(position: Int, convertView: View?, dropdown: Boolean): View {
+                    val label = (convertView as? TextView) ?: TextView(this@MainActivity)
+                    label.text = options[position]
+                    label.textSize = 12f
+                    label.setTextColor(Color.WHITE)
+                    label.gravity = Gravity.CENTER_VERTICAL
+                    label.setPadding(12, 8, 12, 8)
+                    label.background = gradient(intArrayOf(Color.rgb(20, 39, 59), Color.rgb(12, 24, 40)), 6, Color.rgb(48, 92, 120))
+                    return label
+                }
+                override fun getView(position: Int, convertView: View?, parent: ViewGroup): View = styled(position, convertView, false)
+                override fun getDropDownView(position: Int, convertView: View?, parent: ViewGroup): View = styled(position, convertView, true)
+            }
+            setPopupBackgroundDrawable(gradient(intArrayOf(Color.rgb(17, 32, 50), Color.rgb(10, 20, 34)), 10, Color.rgb(48, 92, 120)))
+            setSelection(options.indexOf(prefs.getString("sound_style", "Alarm")).takeIf { it >= 0 } ?: 1)
+        }
     }
 
     private fun saveSettings() {
@@ -230,6 +258,7 @@ class MainActivity : Activity() {
                 "${row.wave.selectedItemPosition + 1}|${if (row.unit.selectedItem == "Custom unit") row.custom.text.toString().trim().ifBlank { "Custom unit" } else row.unit.selectedItem}|${row.action.selectedItem}|${row.lead.selectedItemPosition}"
             }.joinToString("\n"))
             .putBoolean("sound", sound.isChecked)
+            .putString("sound_style", soundStyle.selectedItem?.toString() ?: "Alarm")
             .putBoolean("vibration", vibration.isChecked)
             .apply()
     }
@@ -246,7 +275,7 @@ class MainActivity : Activity() {
                 private fun styled(position: Int, convertView: View?, dropdown: Boolean): View {
                     val label = (convertView as? TextView) ?: TextView(this@MainActivity)
                     label.text = items[position]
-                    label.textSize = 14f
+                    label.textSize = 12f
                     label.setTextColor(Color.WHITE)
                     label.gravity = Gravity.CENTER_VERTICAL
                     label.setPadding(12, 8, 12, 8)
@@ -266,14 +295,19 @@ class MainActivity : Activity() {
         val wave = spinner((1..100).map { "Wave $it" }, "Wave ${waveValue.coerceIn(1,100)}")
         val units = listOf("Blue Dragon", "Ivy Whisper", "Witch Doctor", "Custom unit")
         val unit = spinner(units, if (unitValue in units) unitValue else "Custom unit")
-        val actions = listOf("LIB", "PLACE", "UPGRADE", "SELL", "PLACE + SSS cooldown gem")
-        val action = spinner(actions, actionValue)
+        val actions = listOf("Liberate", "Place", "Activate")
+        val normalizedAction = when (actionValue.uppercase()) {
+            "LIB", "LIBERATE" -> "Liberate"
+            "PLACE" -> "Place"
+            else -> "Activate"
+        }
+        val action = spinner(actions, normalizedAction)
         val leads = (0..10).map { if (it == 0) "At target wave" else "$it wave${if (it == 1) "" else "s"} early" }
         val lead = spinner(leads, leads[leadValue.coerceIn(0,10)])
         val custom = EditText(this).apply {
             hint = "Custom unit name (optional)"
             setText(if (unitValue !in units) unitValue else "")
-            setTextColor(Color.WHITE); setHintTextColor(muted); textSize = 13f
+            setTextColor(Color.WHITE); setHintTextColor(muted); textSize = 11f
             setPadding(9, 4, 9, 4)
             background = gradient(intArrayOf(Color.rgb(19, 31, 48), Color.rgb(19, 31, 48)), 8, Color.rgb(42, 66, 87))
             visibility = if (unitValue == "Custom unit" || unitValue !in units) View.VISIBLE else View.GONE
