@@ -246,7 +246,7 @@ class MainActivity : Activity() {
         }
         val wave = spinner((1..100).map { "Wave $it" }, "Wave ${waveValue.coerceIn(1,100)}")
         val units = listOf("Blue Dragon", "Ivy Whisper", "Witch Doctor", "Custom unit")
-        val unit = spinner(units, unitValue)
+        val unit = spinner(units, if (unitValue in units) unitValue else "Custom unit")
         val actions = listOf("LIB", "PLACE", "UPGRADE", "SELL", "PLACE + SSS cooldown gem")
         val action = spinner(actions, actionValue)
         val leads = (0..10).map { if (it == 0) "At target wave" else "$it wave${if (it == 1) "" else "s"} early" }
@@ -257,7 +257,7 @@ class MainActivity : Activity() {
             setTextColor(Color.WHITE); setHintTextColor(muted); textSize = 13f
             setPadding(9, 4, 9, 4)
             background = gradient(intArrayOf(Color.rgb(19, 31, 48), Color.rgb(19, 31, 48)), 8, Color.rgb(42, 66, 87))
-            visibility = if (unitValue == "Custom unit") View.VISIBLE else View.GONE
+            visibility = if (unitValue == "Custom unit" || unitValue !in units) View.VISIBLE else View.GONE
         }
         unit.onItemSelectedListener = object : android.widget.AdapterView.OnItemSelectedListener {
             override fun onNothingSelected(parent: android.widget.AdapterView<*>?) {}
