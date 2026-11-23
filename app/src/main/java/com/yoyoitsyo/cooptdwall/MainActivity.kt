@@ -209,19 +209,21 @@ class MainActivity : Activity() {
         background = gradient(intArrayOf(Color.rgb(10, 19, 32), Color.rgb(10, 19, 32)), 10, Color.rgb(43, 67, 88))
     }
 
-    private fun actionButton(label: String, primary: Boolean, action: () -> Unit) = Button(this).apply {
+    private fun actionButton(label: String, primary: Boolean, action: () -> Unit) = TextView(this).apply {
         text = label
-        textSize = 11f
-        letterSpacing = 0.02f
-        typeface = Typeface.DEFAULT_BOLD
+        textSize = 12f
+        letterSpacing = 0.015f
+        typeface = Typeface.create("sans-serif", Typeface.BOLD)
         gravity = Gravity.CENTER
-        includeFontPadding = false
-        backgroundTintList = null
-        stateListAnimator = null
+        textAlignment = View.TEXT_ALIGNMENT_CENTER
+        includeFontPadding = true
+        minHeight = 48
+        setPadding(12, 10, 12, 10)
+        setTextColor(if (primary) Color.rgb(3, 18, 28) else Color.rgb(255, 255, 255))
         background = if (primary) gradient(intArrayOf(cyan, Color.rgb(41, 168, 206)), 14)
             else gradient(intArrayOf(Color.rgb(29, 48, 70), Color.rgb(22, 36, 56)), 14, Color.rgb(49, 83, 109))
-        isAllCaps = false
-        setTextColor(if (primary) Color.rgb(3, 18, 28) else Color.WHITE)
+        isClickable = true
+        isFocusable = true
         setOnClickListener { action() }
     }
 
@@ -234,8 +236,14 @@ class MainActivity : Activity() {
                     label.text = options[position]
                     label.textSize = 12f
                     label.setTextColor(Color.WHITE)
-                    label.gravity = Gravity.CENTER_VERTICAL
-                    label.setPadding(12, 8, 12, 8)
+                    label.gravity = Gravity.CENTER
+                    label.textAlignment = View.TEXT_ALIGNMENT_CENTER
+                    label.includeFontPadding = true
+                    label.minHeight = 54
+                    label.setSingleLine(true)
+                    label.ellipsize = android.text.TextUtils.TruncateAt.END
+                    label.setPadding(10, 12, 10, 12)
+                    label.layoutParams = ViewGroup.LayoutParams(-1, -1)
                     label.background = gradient(intArrayOf(Color.rgb(20, 39, 59), Color.rgb(12, 24, 40)), 6, Color.rgb(48, 92, 120))
                     return label
                 }
@@ -289,6 +297,8 @@ class MainActivity : Activity() {
                 override fun getDropDownView(position: Int, convertView: View?, parent: ViewGroup): View = styled(position, convertView, true)
             }
             view.setPopupBackgroundDrawable(gradient(intArrayOf(Color.rgb(17, 32, 50), Color.rgb(10, 20, 34)), 10, Color.rgb(48, 92, 120)))
+            view.minimumHeight = (54 * resources.displayMetrics.density).toInt()
+            view.setPadding(0, 0, 0, 0)
             view.setSelection(items.indexOf(selected).takeIf { it >= 0 } ?: 0)
             return view
         }
@@ -308,7 +318,10 @@ class MainActivity : Activity() {
             hint = "Custom unit name (optional)"
             setText(if (unitValue !in units) unitValue else "")
             setTextColor(Color.WHITE); setHintTextColor(muted); textSize = 11f
-            setPadding(9, 4, 9, 4)
+            gravity = Gravity.CENTER_VERTICAL
+            includeFontPadding = true
+            setSingleLine(true)
+            setPadding(12, 10, 12, 10)
             background = gradient(intArrayOf(Color.rgb(19, 31, 48), Color.rgb(19, 31, 48)), 8, Color.rgb(42, 66, 87))
             visibility = if (unitValue == "Custom unit" || unitValue !in units) View.VISIBLE else View.GONE
         }
@@ -321,20 +334,20 @@ class MainActivity : Activity() {
         rowCard.addView(TextView(this).apply {
             text = "TARGET WAVE"; setTextColor(cyan); textSize = 10f; typeface = Typeface.DEFAULT_BOLD
         })
-        rowCard.addView(wave, LinearLayout.LayoutParams(-1, 46))
+        rowCard.addView(wave, LinearLayout.LayoutParams(-1, 56))
         rowCard.addView(TextView(this).apply {
             text = "UNIT"; setTextColor(muted); textSize = 10f
         })
-        rowCard.addView(unit, LinearLayout.LayoutParams(-1, 46))
-        rowCard.addView(custom, LinearLayout.LayoutParams(-1, 42))
+        rowCard.addView(unit, LinearLayout.LayoutParams(-1, 56))
+        rowCard.addView(custom, LinearLayout.LayoutParams(-1, 50))
         rowCard.addView(TextView(this).apply {
             text = "ACTION"; setTextColor(muted); textSize = 10f
         })
-        rowCard.addView(action, LinearLayout.LayoutParams(-1, 46))
+        rowCard.addView(action, LinearLayout.LayoutParams(-1, 56))
         rowCard.addView(TextView(this).apply {
             text = "EARLY WARNING"; setTextColor(muted); textSize = 10f
         })
-        rowCard.addView(lead, LinearLayout.LayoutParams(-1, 46))
+        rowCard.addView(lead, LinearLayout.LayoutParams(-1, 56))
         rowCard.addView(actionButton("REMOVE ALERT", false) {
             reminderRows.removeAll { it.wave === wave }
             reminderList.removeView(rowCard)
