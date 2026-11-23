@@ -20,6 +20,7 @@ import android.widget.*
 class MainActivity : Activity() {
     companion object { private const val REQUEST_CAPTURE = 41 }
     private val prefs by lazy { getSharedPreferences("wall", MODE_PRIVATE) }
+    private var pendingCalibration = false
     private lateinit var normalLength: EditText
     private lateinit var wave40Length: EditText
     private lateinit var wave60Length: EditText
@@ -230,6 +231,7 @@ class MainActivity : Activity() {
     }
 
     private fun requestScreenSync(calibrate: Boolean) {
+        pendingCalibration = calibrate
         if (!Settings.canDrawOverlays(this)) {
             Toast.makeText(this, "Allow display over other apps first, then tap screen sync again", Toast.LENGTH_LONG).show()
             startActivityForResult(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName")), 9)
@@ -247,7 +249,7 @@ class MainActivity : Activity() {
                 action = OverlayService.ACTION_START_SCAN
                 putExtra(OverlayService.EXTRA_RESULT_CODE, resultCode)
                 putExtra(OverlayService.EXTRA_RESULT_DATA, data)
-                putExtra(OverlayService.EXTRA_CALIBRATE, calibrate)
+                putExtra(OverlayService.EXTRA_CALIBRATE, pendingCalibration)
             }
             if (Build.VERSION.SDK_INT >= 26) startForegroundService(serviceIntent) else startService(serviceIntent)
             Toast.makeText(this, "Screen sync starting…", Toast.LENGTH_SHORT).show()
