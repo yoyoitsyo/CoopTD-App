@@ -77,7 +77,9 @@ class OverlayService : Service() {
 
     private val tick = object : Runnable {
         override fun run() {
-            if (!paused) {
+            // In auto-sync mode, OCR is the authority for wave changes.
+            // Keep rendering the countdown, but never advance the wave locally.
+            if (!paused && !autoSync) {
                 var elapsed = (SystemClock.elapsedRealtime() - waveStartedAt).coerceAtLeast(0L)
                 var safety = 0
                 while (elapsed >= durationForWave(wave) && safety < 100) {
@@ -393,6 +395,8 @@ class OverlayService : Service() {
                                     paused = false
                                     lastAlert = -1
                                     pauseButton?.text = "PAUSE"
+                                    // Fire reminders from the game-confirmed wave, not the local timer.
+                                    checkReminder()
                                 }
                                 if (gameRemaining != null) {
                                     val duration = durationForWave(wave)
