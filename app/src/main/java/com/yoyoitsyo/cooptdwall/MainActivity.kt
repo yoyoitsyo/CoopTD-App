@@ -210,7 +210,9 @@ class MainActivity : Activity() {
         textSize = 12f
         letterSpacing = 0.06f
         typeface = Typeface.DEFAULT_BOLD
-        setTextColor(if (primary) Color.rgb(5, 20, 30) else Color.WHITE)
+        setTextColor(if (primary) Color.rgb(3, 18, 28) else Color.WHITE)
+        backgroundTintList = null
+        stateListAnimator = null
         background = if (primary) gradient(intArrayOf(cyan, Color.rgb(41, 168, 206)), 14)
             else gradient(intArrayOf(Color.rgb(29, 48, 70), Color.rgb(22, 36, 56)), 14, Color.rgb(49, 83, 109))
         isAllCaps = false
@@ -240,7 +242,24 @@ class MainActivity : Activity() {
         }
         fun spinner(items: List<String>, selected: String): Spinner {
             val view = Spinner(this)
-            view.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, items)
+            view.adapter = object : ArrayAdapter<String>(this, android.R.layout.simple_spinner_item, items) {
+                private fun styled(position: Int, convertView: View?, dropdown: Boolean): View {
+                    val label = (convertView as? TextView) ?: TextView(this@MainActivity)
+                    label.text = items[position]
+                    label.textSize = 14f
+                    label.setTextColor(Color.WHITE)
+                    label.gravity = Gravity.CENTER_VERTICAL
+                    label.setPadding(12, 8, 12, 8)
+                    label.background = gradient(intArrayOf(
+                        if (dropdown) Color.rgb(24, 43, 64) else Color.rgb(12, 24, 40),
+                        if (dropdown) Color.rgb(17, 32, 50) else Color.rgb(12, 24, 40)
+                    ), 6, Color.rgb(48, 92, 120))
+                    return label
+                }
+                override fun getView(position: Int, convertView: View?, parent: ViewGroup): View = styled(position, convertView, false)
+                override fun getDropDownView(position: Int, convertView: View?, parent: ViewGroup): View = styled(position, convertView, true)
+            }
+            view.setPopupBackgroundDrawable(gradient(intArrayOf(Color.rgb(17, 32, 50), Color.rgb(10, 20, 34)), 10, Color.rgb(48, 92, 120)))
             view.setSelection(items.indexOf(selected).takeIf { it >= 0 } ?: 0)
             return view
         }
