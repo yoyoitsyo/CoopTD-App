@@ -530,7 +530,7 @@ class OverlayService : Service() {
                     }
                 }
                 return true
-            }}
+            }
         }
         val params = WindowManager.LayoutParams(
             WindowManager.LayoutParams.MATCH_PARENT,
