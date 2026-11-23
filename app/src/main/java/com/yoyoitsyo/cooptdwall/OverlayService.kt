@@ -50,7 +50,7 @@ class OverlayService : Service() {
     private var waveText: TextView? = null
     private var countdownText: TextView? = null
     private var nextText: TextView? = null
-    private var pauseButton: Button? = null
+    private var pauseButton: TextView? = null
     private val prefs by lazy { getSharedPreferences("wall", MODE_PRIVATE) }
     private var mediaProjection: MediaProjection? = null
     private var virtualDisplay: android.hardware.display.VirtualDisplay? = null
@@ -174,19 +174,23 @@ class OverlayService : Service() {
         }
         val header = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
         val title = TextView(this).apply {
-            text = "COOPTD  /  WALL ASSIST"
+            text = "◈  COOPTD  /  WAVE COMMAND"
             textSize = 10f
             letterSpacing = 0.12f
             setTextColor(Color.rgb(48, 220, 231))
             setTypeface(null, android.graphics.Typeface.BOLD)
             setPadding(2, 5, 8, 5)
         }
-        val close = Button(this).apply {
+        val close = TextView(this).apply {
             text = "×"
-            textSize = 18f
+            textSize = 22f
+            gravity = Gravity.CENTER
             setTextColor(Color.WHITE)
-            setPadding(4, 0, 4, 0)
-            minWidth = 42
+            background = GradientDrawable().apply {
+                setColor(Color.rgb(105, 35, 52))
+                cornerRadius = 10f * resources.displayMetrics.density
+                setStroke((1f * resources.displayMetrics.density).toInt(), Color.rgb(235, 91, 112))
+            }
             setOnClickListener { stopSelf() }
         }
         header.addView(title, LinearLayout.LayoutParams(0, 40, 1f))
@@ -197,8 +201,15 @@ class OverlayService : Service() {
             includeFontPadding = false
             setAutoSizeTextTypeUniformWithConfiguration(16, 22, 1, android.util.TypedValue.COMPLEX_UNIT_SP)
             setTextColor(Color.WHITE)
-            setTypeface(null, android.graphics.Typeface.BOLD)
-            setPadding(2, 2, 2, 0)
+            setTypeface(android.graphics.Typeface.create("sans-serif-black", android.graphics.Typeface.NORMAL))
+            setPadding(10, 8, 10, 5)
+            background = GradientDrawable(
+                GradientDrawable.Orientation.LEFT_RIGHT,
+                intArrayOf(Color.rgb(20, 55, 77), Color.rgb(12, 32, 52))
+            ).apply {
+                cornerRadius = 11f * resources.displayMetrics.density
+                setStroke((1f * resources.displayMetrics.density).toInt(), Color.rgb(48, 220, 231))
+            }
         }
         countdownText = TextView(this).apply {
             textSize = 16f
@@ -211,43 +222,55 @@ class OverlayService : Service() {
         }
         nextText = TextView(this).apply {
             textSize = 11f
-            setTextColor(Color.rgb(90, 195, 230))
-            setPadding(2, 3, 2, 6)
+            setTextColor(Color.rgb(255, 205, 104))
+            setPadding(10, 7, 10, 8)
+            background = GradientDrawable().apply {
+                setColor(Color.rgb(10, 23, 39))
+                cornerRadius = 9f * resources.displayMetrics.density
+                setStroke((1f * resources.displayMetrics.density).toInt(), Color.rgb(91, 111, 133))
+            }
         }
 
-        fun button(label: String, action: () -> Unit) = Button(this).apply {
+        fun button(label: String, action: () -> Unit) = TextView(this).apply {
             text = label
             textSize = 9f
             maxLines = 1
             includeFontPadding = false
             gravity = Gravity.CENTER
-            setTextColor(Color.WHITE)
-            backgroundTintList = null
-            stateListAnimator = null
+            textAlignment = View.TEXT_ALIGNMENT_CENTER
+            setTextColor(Color.rgb(224, 249, 255))
+            typeface = android.graphics.Typeface.create("sans-serif-condensed", android.graphics.Typeface.BOLD)
             background = GradientDrawable(
-                GradientDrawable.Orientation.LEFT_RIGHT,
-                intArrayOf(Color.rgb(31, 65, 88), Color.rgb(21, 45, 67))
+                GradientDrawable.Orientation.TOP_BOTTOM,
+                intArrayOf(Color.rgb(31, 76, 103), Color.rgb(14, 39, 62))
             ).apply {
                 cornerRadius = 9f * resources.displayMetrics.density
-                setStroke((1f * resources.displayMetrics.density).toInt(), Color.rgb(48, 112, 139))
+                setStroke((1f * resources.displayMetrics.density).toInt(), Color.rgb(48, 190, 211))
             }
-            setPadding(2, 0, 2, 0)
+            setPadding(3, 0, 3, 0)
             minWidth = 38
-            isAllCaps = false
+            isClickable = true
+            isFocusable = true
             setOnClickListener { action() }
         }
-        val controls = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        val controls = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            setPadding(0, 5, 0, 4)
+        }
         controls.addView(button("WAVE -1") { correctWave(-1) }, LinearLayout.LayoutParams(0, 42, 1.2f))
         pauseButton = button("PAUSE") { togglePause() }
         controls.addView(pauseButton, LinearLayout.LayoutParams(0, 42, 1.4f))
         controls.addView(button("WAVE +1") { correctWave(1) }, LinearLayout.LayoutParams(0, 42, 1.2f))
-        val appearance = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        val appearance = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            setPadding(0, 2, 0, 0)
+        }
         appearance.addView(button("SMALLER") { changeScale(-0.1f) }, LinearLayout.LayoutParams(0, 38, 1.2f))
         appearance.addView(button("LARGER") { changeScale(0.1f) }, LinearLayout.LayoutParams(0, 38, 1.2f))
         appearance.addView(button("OPACITY") { changeOpacity() }, LinearLayout.LayoutParams(0, 38, 1.2f))
 
         box.addView(header)
-        box.addView(waveText)
+        box.addView(waveText, LinearLayout.LayoutParams(-1, -2).apply { topMargin = 3; bottomMargin = 5 })
         box.addView(countdownText)
         box.addView(nextText)
         box.addView(controls)
