@@ -11,6 +11,9 @@ import android.media.AudioManager
 import android.media.ToneGenerator
 import android.content.Context
 import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Paint
+import android.graphics.RectF
 import android.graphics.drawable.GradientDrawable
 import android.hardware.display.DisplayManager
 import android.media.ImageReader
@@ -28,6 +31,7 @@ class OverlayService : Service() {
         const val ACTION_START_SCAN = "START_SCAN"
         const val EXTRA_RESULT_CODE = "capture_result_code"
         const val EXTRA_RESULT_DATA = "capture_result_data"
+        const val EXTRA_CALIBRATE = "capture_calibrate"
         private const val CHANNEL = "cooptd_timer"
     }
 
@@ -55,6 +59,9 @@ class OverlayService : Service() {
     private var pendingWave = -1
     private var pendingWaveCount = 0
     private var autoSync = false
+    private var calibrationView: View? = null
+    private var captureWidth = 0
+    private var captureHeight = 0
     private val textRecognizer by lazy { TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS) }
 
     private fun durationForWave(number: Int): Long {
@@ -124,7 +131,8 @@ class OverlayService : Service() {
         }
         if (hasCapture && captureData != null) {
             val resultCode = intent?.getIntExtra(EXTRA_RESULT_CODE, Activity.RESULT_CANCELED) ?: Activity.RESULT_CANCELED
-            startScreenCapture(resultCode, captureData)
+            val calibrate = intent?.getBooleanExtra(EXTRA_CALIBRATE, false) ?: false
+            startScreenCapture(resultCode, captureData, calibrate)
         }
         return START_STICKY
     }
@@ -284,7 +292,7 @@ class OverlayService : Service() {
         }
     }
 
-    private fun startScreenCapture(resultCode: Int, data: Intent) {
+    private fun startScreenCapture(resultCode: Int, data: Intent, calibrate: Boolean) {
         stopScreenCapture()
         try {
             val manager = getSystemService(Context.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
@@ -293,11 +301,13 @@ class OverlayService : Service() {
             val metrics = resources.displayMetrics
             val width = metrics.widthPixels
             val height = metrics.heightPixels
+            captureWidth = width
+            captureHeight = height
             imageReader = ImageReader.newInstance(width, height, android.graphics.PixelFormat.RGBA_8888, 2)
             imageReader?.setOnImageAvailableListener({ reader ->
                 val image = try { reader.acquireLatestImage() } catch (_: Exception) { null } ?: return@setOnImageAvailableListener
                 val now = SystemClock.elapsedRealtime()
-                if (scanInFlight || now - lastScanAt < 850L) {
+                if (!autoSync || scanInFlight || now - lastScanAt < 850L) {
                     image.close()
                     return@setOnImageAvailableListener
                 }
@@ -320,7 +330,13 @@ class OverlayService : Service() {
                 }
                 val frame = bitmap
                 if (frame == null) return@setOnImageAvailableListener
-                textRecognizer.process(InputImage.fromBitmap(frame, 0))
+                val crop = cropToSavedArea(frame)
+                if (crop == null) {
+                    frame.recycle()
+                    scanInFlight = false
+                    return@setOnImageAvailableListener
+                }
+                textRecognizer.process(InputImage.fromBitmap(crop, 0))
                     .addOnSuccessListener { result ->
                         val detected = parseWaveNumber(result.text)
                         if (detected != null && detected in 0..200) {
@@ -342,6 +358,7 @@ class OverlayService : Service() {
                     }
                     .addOnFailureListener { }
                     .addOnCompleteListener {
+                        if (crop !== frame) crop.recycle()
                         frame.recycle()
                         scanInFlight = false
                     }
@@ -358,14 +375,145 @@ class OverlayService : Service() {
                     refresh()
                 }
             }, handler)
-            autoSync = true
-            nextText?.text = "● AUTO SYNC ON  ·  Looking for WAVE + number"
-            refresh()
+            autoSync = false
+            if (calibrate || !hasSavedCaptureArea()) {
+                showCaptureAreaSelector()
+            } else {
+                autoSync = true
+                nextText?.text = "● AUTO SYNC ON  ·  Scanning saved area"
+                refresh()
+            }
         } catch (e: Exception) {
             autoSync = false
             nextText?.text = "SCREEN SYNC ERROR  ·  Check permission"
             refresh()
         }
+    }
+
+
+    private fun hasSavedCaptureArea(): Boolean =
+        prefs.contains("scan_left") && prefs.contains("scan_top") &&
+            prefs.contains("scan_right") && prefs.contains("scan_bottom")
+
+    private fun cropToSavedArea(frame: Bitmap): Bitmap? {
+        if (!hasSavedCaptureArea()) return null
+        val left = (prefs.getFloat("scan_left", 0f) * frame.width).toInt().coerceIn(0, frame.width - 1)
+        val top = (prefs.getFloat("scan_top", 0f) * frame.height).toInt().coerceIn(0, frame.height - 1)
+        val right = (prefs.getFloat("scan_right", 1f) * frame.width).toInt().coerceIn(left + 1, frame.width)
+        val bottom = (prefs.getFloat("scan_bottom", 1f) * frame.height).toInt().coerceIn(top + 1, frame.height)
+        return try { Bitmap.createBitmap(frame, left, top, right - left, bottom - top) } catch (_: Exception) { null }
+    }
+
+    private fun showCaptureAreaSelector() {
+        if (calibrationView != null) return
+        val density = resources.displayMetrics.density
+        val selector = object : View(this) {
+            private val shade = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.argb(205, 3, 10, 20) }
+            private val border = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = Color.rgb(48, 220, 231); style = Paint.Style.STROKE; strokeWidth = 3f * density
+            }
+            private val fill = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = Color.argb(45, 48, 220, 231); style = Paint.Style.FILL
+            }
+            private val white = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = Color.WHITE; textSize = 15f * density; typeface = android.graphics.Typeface.DEFAULT_BOLD
+            }
+            private val muted = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = Color.rgb(185, 207, 224); textSize = 12f * density
+            }
+            private val savePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.rgb(27, 180, 198) }
+            private val rect = RectF()
+            private var startX = 0f
+            private var startY = 0f
+            private var drawing = false
+            private var hasSelection = false
+            private val buttonRect = RectF()
+
+            override fun onDraw(canvas: Canvas) {
+                super.onDraw(canvas)
+                canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), shade)
+                canvas.drawText("SET WAVE CAPTURE AREA", 22f * density, 42f * density, white)
+                canvas.drawText("Drag a box around the wave number.", 22f * density, 68f * density, muted)
+                canvas.drawText("Make it tight enough to exclude nearby text.", 22f * density, 88f * density, muted)
+                if (hasSelection) {
+                    canvas.drawRoundRect(rect, 8f * density, 8f * density, fill)
+                    canvas.drawRoundRect(rect, 8f * density, 8f * density, border)
+                    canvas.drawCircle(rect.left, rect.top, 7f * density, savePaint)
+                    canvas.drawCircle(rect.right, rect.bottom, 7f * density, savePaint)
+                }
+                val bw = 190f * density
+                val bh = 48f * density
+                buttonRect.set((width - bw) / 2f, height - 90f * density, (width + bw) / 2f, height - 90f * density + bh)
+                savePaint.alpha = if (hasSelection) 255 else 90
+                canvas.drawRoundRect(buttonRect, 12f * density, 12f * density, savePaint)
+                white.textAlign = Paint.Align.CENTER
+                canvas.drawText("SAVE CAPTURE AREA", buttonRect.centerX(), buttonRect.centerY() + 5f * density, white)
+                white.textAlign = Paint.Align.LEFT
+                canvas.drawText("Draw again to change the selection.", 22f * density, height - 28f * density, muted)
+            }
+
+            override fun onTouchEvent(event: MotionEvent): Boolean {
+                when (event.action) {
+                    MotionEvent.ACTION_DOWN -> {
+                        if (buttonRect.contains(event.x, event.y) && hasSelection) {
+                            saveCaptureArea(rect)
+                            return true
+                        }
+                        if (event.y < 105f * density || event.y > height - 105f * density) return true
+                        startX = event.x; startY = event.y
+                        rect.set(startX, startY, startX, startY)
+                        drawing = true; hasSelection = false
+                        invalidate()
+                        return true
+                    }
+                    MotionEvent.ACTION_MOVE -> if (drawing) {
+                        rect.set(minOf(startX, event.x), minOf(startY, event.y), maxOf(startX, event.x), maxOf(startY, event.y))
+                        invalidate()
+                        return true
+                    }
+                    MotionEvent.ACTION_UP -> if (drawing) {
+                        drawing = false
+                        rect.set(minOf(startX, event.x), minOf(startY, event.y), maxOf(startX, event.x), maxOf(startY, event.y))
+                        hasSelection = rect.width() >= 24f * density && rect.height() >= 18f * density
+                        invalidate()
+                        return true
+                    }
+                }
+                return true
+            }
+        }
+        val params = WindowManager.LayoutParams(
+            WindowManager.LayoutParams.MATCH_PARENT,
+            WindowManager.LayoutParams.MATCH_PARENT,
+            if (Build.VERSION.SDK_INT >= 26) WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY else WindowManager.LayoutParams.TYPE_PHONE,
+            WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
+            PixelFormat.TRANSLUCENT
+        ).apply { gravity = Gravity.TOP or Gravity.START }
+        try {
+            windowManager.addView(selector, params)
+            calibrationView = selector
+            nextText?.text = "● CALIBRATION  ·  Draw around wave number"
+            refresh()
+        } catch (_: Exception) {
+            nextText?.text = "CAPTURE AREA ERROR  ·  Check overlay permission"
+        }
+    }
+
+    private fun saveCaptureArea(rect: RectF) {
+        val view = calibrationView ?: return
+        val viewWidth = view.width.coerceAtLeast(1).toFloat()
+        val viewHeight = view.height.coerceAtLeast(1).toFloat()
+        prefs.edit()
+            .putFloat("scan_left", (rect.left / viewWidth).coerceIn(0f, 1f))
+            .putFloat("scan_top", (rect.top / viewHeight).coerceIn(0f, 1f))
+            .putFloat("scan_right", (rect.right / viewWidth).coerceIn(0f, 1f))
+            .putFloat("scan_bottom", (rect.bottom / viewHeight).coerceIn(0f, 1f))
+            .apply()
+        try { windowManager.removeView(view) } catch (_: Exception) {}
+        calibrationView = null
+        autoSync = true
+        nextText?.text = "● AREA SAVED  ·  Auto sync running"
+        refresh()
     }
 
     private fun parseWaveNumber(text: String): Int? {
@@ -375,6 +523,8 @@ class OverlayService : Service() {
     }
 
     private fun stopScreenCapture() {
+        calibrationView?.let { try { windowManager.removeView(it) } catch (_: Exception) {} }
+        calibrationView = null
         try { virtualDisplay?.release() } catch (_: Exception) {}
         virtualDisplay = null
         try { imageReader?.setOnImageAvailableListener(null, null); imageReader?.close() } catch (_: Exception) {}
