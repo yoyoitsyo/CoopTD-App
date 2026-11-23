@@ -9,11 +9,25 @@ import android.view.*
 import android.widget.*
 import android.media.AudioManager
 import android.media.ToneGenerator
+import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.drawable.GradientDrawable
+import android.hardware.display.DisplayManager
+import android.media.ImageReader
+import android.media.projection.MediaProjection
+import android.media.projection.MediaProjectionManager
+import android.content.pm.ServiceInfo
+import com.google.mlkit.vision.common.InputImage
+import com.google.mlkit.vision.text.TextRecognition
+import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 
 class OverlayService : Service() {
     companion object {
         const val ACTION_START = "START"
         const val ACTION_STOP = "STOP"
+        const val ACTION_START_SCAN = "START_SCAN"
+        const val EXTRA_RESULT_CODE = "capture_result_code"
+        const val EXTRA_RESULT_DATA = "capture_result_data"
         private const val CHANNEL = "cooptd_timer"
     }
 
@@ -33,6 +47,15 @@ class OverlayService : Service() {
     private var nextText: TextView? = null
     private var pauseButton: Button? = null
     private val prefs by lazy { getSharedPreferences("wall", MODE_PRIVATE) }
+    private var mediaProjection: MediaProjection? = null
+    private var virtualDisplay: android.hardware.display.VirtualDisplay? = null
+    private var imageReader: ImageReader? = null
+    private var scanInFlight = false
+    private var lastScanAt = 0L
+    private var pendingWave = -1
+    private var pendingWaveCount = 0
+    private var autoSync = false
+    private val textRecognizer by lazy { TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS) }
 
     private fun durationForWave(number: Int): Long {
         val normal = prefs.getInt("interval", 60).coerceIn(5, 3600)
@@ -73,7 +96,18 @@ class OverlayService : Service() {
             stopSelf()
             return START_NOT_STICKY
         }
-        startForeground(17, notification("Timer ready"))
+        val captureData = if (intent?.action == ACTION_START_SCAN) {
+            if (Build.VERSION.SDK_INT >= 33) intent.getParcelableExtra(EXTRA_RESULT_DATA, Intent::class.java)
+            else @Suppress("DEPRECATION") (intent.getParcelableExtra(EXTRA_RESULT_DATA) as? Intent)
+        } else null
+        val hasCapture = intent?.action == ACTION_START_SCAN && captureData != null
+        val foregroundTypes = if (hasCapture) {
+            ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE or ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION
+        } else {
+            ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
+        }
+        if (Build.VERSION.SDK_INT >= 29) startForeground(17, notification(if (hasCapture) "Starting automatic wave sync…" else "Timer ready"), foregroundTypes)
+        else startForeground(17, notification("Timer ready"))
         if (overlay == null) {
             wave = 0
             waveStartedAt = SystemClock.elapsedRealtime()
@@ -82,6 +116,10 @@ class OverlayService : Service() {
             lastAlert = -1
             createOverlay()
             handler.post(tick)
+        }
+        if (hasCapture && captureData != null) {
+            val resultCode = intent?.getIntExtra(EXTRA_RESULT_CODE, Activity.RESULT_CANCELED) ?: Activity.RESULT_CANCELED
+            startScreenCapture(resultCode, captureData)
         }
         return START_STICKY
     }
@@ -109,15 +147,24 @@ class OverlayService : Service() {
     private fun createOverlay() {
         val box = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(12, 9, 12, 9)
-            setBackgroundColor(Color.rgb(25, 29, 42))
+            setPadding(13, 10, 13, 10)
+            background = GradientDrawable(
+                GradientDrawable.Orientation.TL_BR,
+                intArrayOf(Color.rgb(14, 29, 48), Color.rgb(8, 16, 29))
+            ).apply {
+                cornerRadius = 18f * resources.displayMetrics.density
+                setStroke((1.2f * resources.displayMetrics.density).toInt(), Color.rgb(45, 190, 210))
+            }
             alpha = opacity
+            elevation = 12f * resources.displayMetrics.density
         }
         val header = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
         val title = TextView(this).apply {
-            text = "COOPTD WALL ASSIST"
-            textSize = 12f
-            setTextColor(Color.WHITE)
+            text = "COOPTD  /  WALL ASSIST"
+            textSize = 10f
+            letterSpacing = 0.12f
+            setTextColor(Color.rgb(48, 220, 231))
+            setTypeface(null, android.graphics.Typeface.BOLD)
             setPadding(2, 5, 8, 5)
         }
         val close = Button(this).apply {
@@ -131,24 +178,34 @@ class OverlayService : Service() {
         header.addView(title, LinearLayout.LayoutParams(0, 40, 1f))
         header.addView(close, LinearLayout.LayoutParams(42, 40))
         waveText = TextView(this).apply {
-            textSize = 26f
+            textSize = 29f
             setTextColor(Color.WHITE)
+            setTypeface(null, android.graphics.Typeface.BOLD)
             setPadding(2, 2, 2, 0)
         }
         countdownText = TextView(this).apply {
-            textSize = 18f
-            setTextColor(Color.rgb(115, 220, 170))
+            textSize = 19f
+            setTextColor(Color.rgb(75, 235, 185))
+            setTypeface(null, android.graphics.Typeface.BOLD)
             setPadding(2, 0, 2, 4)
         }
         nextText = TextView(this).apply {
-            textSize = 12f
-            setTextColor(Color.rgb(130, 210, 255))
+            textSize = 11f
+            setTextColor(Color.rgb(90, 195, 230))
             setPadding(2, 3, 2, 6)
         }
 
         fun button(label: String, action: () -> Unit) = Button(this).apply {
             text = label
             textSize = 11f
+            setTextColor(Color.WHITE)
+            background = GradientDrawable(
+                GradientDrawable.Orientation.LEFT_RIGHT,
+                intArrayOf(Color.rgb(31, 65, 88), Color.rgb(21, 45, 67))
+            ).apply {
+                cornerRadius = 9f * resources.displayMetrics.density
+                setStroke((1f * resources.displayMetrics.density).toInt(), Color.rgb(48, 112, 139))
+            }
             setPadding(2, 0, 2, 0)
             minWidth = 38
             setOnClickListener { action() }
@@ -215,10 +272,114 @@ class OverlayService : Service() {
         waveText?.text = "WAVE $wave"
         countdownText?.text = if (paused) "PAUSED · " + formatTime(remainingWhenPaused) else formatTime(remaining)
         val upcoming = reminders().firstOrNull { it.first > wave }
-        nextText?.text = upcoming?.let { "NEXT: ${it.second} · WAVE ${it.first}" } ?: "No upcoming reminders"
+        val reminderLine = upcoming?.let { "NEXT: ${it.second} · WAVE ${it.first}" } ?: "No upcoming reminders"
+        nextText?.text = if (autoSync) "● AUTO SYNC ON  ·  $reminderLine" else reminderLine
         if (Build.VERSION.SDK_INT >= 26) {
             getSystemService(NotificationManager::class.java).notify(17, notification("Wave $wave · ${formatTime(remaining)}"))
         }
+    }
+
+    private fun startScreenCapture(resultCode: Int, data: Intent) {
+        stopScreenCapture()
+        try {
+            val manager = getSystemService(Context.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
+            val projection = manager.getMediaProjection(resultCode, data)
+            mediaProjection = projection
+            val metrics = resources.displayMetrics
+            val width = metrics.widthPixels
+            val height = metrics.heightPixels
+            imageReader = ImageReader.newInstance(width, height, android.graphics.PixelFormat.RGBA_8888, 2)
+            imageReader?.setOnImageAvailableListener({ reader ->
+                val image = try { reader.acquireLatestImage() } catch (_: Exception) { null } ?: return@setOnImageAvailableListener
+                val now = SystemClock.elapsedRealtime()
+                if (scanInFlight || now - lastScanAt < 850L) {
+                    image.close()
+                    return@setOnImageAvailableListener
+                }
+                lastScanAt = now
+                scanInFlight = true
+                var bitmap: Bitmap? = null
+                try {
+                    val plane = image.planes[0]
+                    val pixelStride = plane.pixelStride
+                    val rowPadding = plane.rowStride - pixelStride * width
+                    val paddedWidth = width + rowPadding / pixelStride
+                    val padded = Bitmap.createBitmap(paddedWidth, height, Bitmap.Config.ARGB_8888)
+                    padded.copyPixelsFromBuffer(plane.buffer)
+                    bitmap = Bitmap.createBitmap(padded, 0, 0, width, height)
+                    padded.recycle()
+                } catch (_: Exception) {
+                    scanInFlight = false
+                } finally {
+                    image.close()
+                }
+                val frame = bitmap
+                if (frame == null) return@setOnImageAvailableListener
+                textRecognizer.process(InputImage.fromBitmap(frame, 0))
+                    .addOnSuccessListener { result ->
+                        val detected = parseWaveNumber(result.text)
+                        if (detected != null && detected in 0..200) {
+                            if (detected == pendingWave) pendingWaveCount++ else {
+                                pendingWave = detected
+                                pendingWaveCount = 1
+                            }
+                            if (pendingWaveCount >= 2 && detected != wave) {
+                                wave = detected
+                                waveStartedAt = SystemClock.elapsedRealtime()
+                                remainingWhenPaused = durationForWave(wave)
+                                paused = false
+                                lastAlert = -1
+                                pauseButton?.text = "PAUSE"
+                                nextText?.text = "● SYNCED TO GAME  ·  WAVE $wave"
+                                refresh()
+                            }
+                        }
+                    }
+                    .addOnFailureListener { }
+                    .addOnCompleteListener {
+                        frame.recycle()
+                        scanInFlight = false
+                    }
+            }, handler)
+            virtualDisplay = projection.createVirtualDisplay(
+                "CoopTDWaveScan", width, height, metrics.densityDpi,
+                DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR,
+                imageReader?.surface, null, handler
+            )
+            projection.registerCallback(object : MediaProjection.Callback() {
+                override fun onStop() {
+                    autoSync = false
+                    stopScreenCapture()
+                    refresh()
+                }
+            }, handler)
+            autoSync = true
+            nextText?.text = "● AUTO SYNC ON  ·  Looking for WAVE + number"
+            refresh()
+        } catch (e: Exception) {
+            autoSync = false
+            nextText?.text = "SCREEN SYNC ERROR  ·  Check permission"
+            refresh()
+        }
+    }
+
+    private fun parseWaveNumber(text: String): Int? {
+        val normalized = text.replace("\\n", " ").replace(Regex("\\s+"), " ")
+        val match = Regex("(?i)\\bwave\\s*[:#-]?\\s*(\\d{1,3})\\b").find(normalized)
+        return match?.groupValues?.getOrNull(1)?.toIntOrNull()
+    }
+
+    private fun stopScreenCapture() {
+        try { virtualDisplay?.release() } catch (_: Exception) {}
+        virtualDisplay = null
+        try { imageReader?.setOnImageAvailableListener(null, null); imageReader?.close() } catch (_: Exception) {}
+        imageReader = null
+        try { mediaProjection?.stop() } catch (_: Exception) {}
+        mediaProjection = null
+        autoSync = false
+        scanInFlight = false
+        pendingWave = -1
+        pendingWaveCount = 0
     }
 
     private fun formatTime(ms: Long): String {
@@ -296,6 +457,8 @@ class OverlayService : Service() {
 
     override fun onDestroy() {
         handler.removeCallbacks(tick)
+        stopScreenCapture()
+        try { textRecognizer.close() } catch (_: Exception) {}
         overlay?.let { try { windowManager.removeView(it) } catch (_: Exception) {} }
         overlay = null
         super.onDestroy()
