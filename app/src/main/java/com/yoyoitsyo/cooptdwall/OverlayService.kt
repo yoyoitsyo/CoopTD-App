@@ -192,13 +192,21 @@ class OverlayService : Service() {
         header.addView(title, LinearLayout.LayoutParams(0, 40, 1f))
         header.addView(close, LinearLayout.LayoutParams(42, 40))
         waveText = TextView(this).apply {
-            textSize = 29f
+            textSize = 22f
+            maxLines = 1
+            includeFontPadding = false
+            autoSizeTextType = TextView.AUTO_SIZE_TEXT_TYPE_UNIFORM
+            setAutoSizeTextTypeUniformWithConfiguration(16, 22, 1, android.util.TypedValue.COMPLEX_UNIT_SP)
             setTextColor(Color.WHITE)
             setTypeface(null, android.graphics.Typeface.BOLD)
             setPadding(2, 2, 2, 0)
         }
         countdownText = TextView(this).apply {
-            textSize = 19f
+            textSize = 16f
+            maxLines = 1
+            includeFontPadding = false
+            autoSizeTextType = TextView.AUTO_SIZE_TEXT_TYPE_UNIFORM
+            setAutoSizeTextTypeUniformWithConfiguration(12, 16, 1, android.util.TypedValue.COMPLEX_UNIT_SP)
             setTextColor(Color.rgb(75, 235, 185))
             setTypeface(null, android.graphics.Typeface.BOLD)
             setPadding(2, 0, 2, 4)
@@ -212,6 +220,9 @@ class OverlayService : Service() {
         fun button(label: String, action: () -> Unit) = Button(this).apply {
             text = label
             textSize = 9f
+            maxLines = 1
+            includeFontPadding = false
+            gravity = Gravity.CENTER
             setTextColor(Color.WHITE)
             backgroundTintList = null
             stateListAnimator = null
@@ -688,14 +699,27 @@ class OverlayService : Service() {
             }
         }.sortedBy { it.wave }
 
+    private fun playAlertSound() {
+        val generator = try { ToneGenerator(AudioManager.STREAM_NOTIFICATION, 85) } catch (_: Exception) { return }
+        val tone = when (prefs.getString("sound_style", "Alarm")) {
+            "Beep" -> ToneGenerator.TONE_PROP_BEEP
+            "Urgent" -> ToneGenerator.TONE_CDMA_EMERGENCY_RINGBACK
+            else -> ToneGenerator.TONE_CDMA_ALERT_CALL_GUARD
+        }
+        try {
+            generator.startTone(tone, if (prefs.getString("sound_style", "Alarm") == "Urgent") 700 else 450)
+            handler.postDelayed({ try { generator.release() } catch (_: Exception) {} }, 1000)
+        } catch (_: Exception) {
+            try { generator.release() } catch (_: Exception) {}
+        }
+    }
+
     private fun checkReminder() {
         val matches = reminders().filter { it.wave - it.lead == wave }
         if (matches.isEmpty() || wave == lastAlert) return
         lastAlert = wave
         matches.forEachIndexed { index, match ->
-            if (prefs.getBoolean("sound", true)) {
-                try { ToneGenerator(AudioManager.STREAM_NOTIFICATION, 80).startTone(ToneGenerator.TONE_PROP_BEEP, 250) } catch (_: Exception) {}
-            }
+            if (prefs.getBoolean("sound", true)) playAlertSound()
             if (prefs.getBoolean("vibration", true)) {
                 val vibrator = getSystemService(VIBRATOR_SERVICE) as Vibrator
                 if (Build.VERSION.SDK_INT >= 26) vibrator.vibrate(VibrationEffect.createOneShot(350, VibrationEffect.DEFAULT_AMPLITUDE))
