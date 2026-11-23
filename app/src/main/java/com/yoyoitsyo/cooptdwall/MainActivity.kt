@@ -24,7 +24,8 @@ class MainActivity : Activity() {
     private lateinit var normalLength: EditText
     private lateinit var wave40Length: EditText
     private lateinit var wave60Length: EditText
-    private lateinit var reminders: EditText
+    private val reminderRows = mutableListOf<ReminderRow>()
+    private lateinit var reminderList: LinearLayout
     private lateinit var sound: CheckBox
     private lateinit var vibration: CheckBox
 
@@ -32,6 +33,7 @@ class MainActivity : Activity() {
     private val panel = Color.rgb(19, 29, 47)
     private val cyan = Color.rgb(48, 220, 231)
     private val muted = Color.rgb(154, 174, 197)
+    private data class ReminderRow(val wave: Spinner, val unit: Spinner, val action: Spinner, val lead: Spinner, val custom: EditText)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -86,22 +88,32 @@ class MainActivity : Activity() {
         root.addView(sectionTitle("WAVE REMINDERS"))
         val reminderCard = card()
         reminderCard.addView(TextView(this).apply {
-            text = "One reminder per line:  WAVE, UNIT, ACTION"
+            text = "Choose the target wave, unit, action, and how early to warn you."
             textSize = 12f
             setTextColor(muted)
-            setPadding(2, 0, 2, 8)
+            setPadding(2, 0, 2, 10)
         })
-        reminders = EditText(this).apply {
-            setText(prefs.getString("reminders", "72, Blue Dragon, LIB\n76, Ivy Whisper, PLACE\n85, Witch Doctor, PLACE + SSS cooldown gem"))
-            minLines = 4
-            gravity = Gravity.TOP
-            textSize = 14f
-            setTextColor(Color.WHITE)
-            setHintTextColor(muted)
-            setPadding(12, 10, 12, 10)
-            background = gradient(intArrayOf(Color.rgb(11, 19, 33), Color.rgb(11, 19, 33)), 12, Color.rgb(44, 66, 88))
+        reminderList = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        reminderCard.addView(reminderList)
+        val saved = prefs.getString("reminders", "").orEmpty()
+        if (saved.isBlank()) {
+            addReminderRow(72, "Blue Dragon", "LIB", 0)
+            addReminderRow(76, "Ivy Whisper", "PLACE", 0)
+            addReminderRow(85, "Witch Doctor", "PLACE + SSS cooldown gem", 0)
+        } else {
+            saved.lines().forEach { line ->
+                val parts = line.split("|")
+                if (parts.size >= 4) {
+                    addReminderRow(parts[0].toIntOrNull() ?: 72, parts[1], parts[2], parts[3].toIntOrNull() ?: 0)
+                } else {
+                    val old = line.split(",", limit = 3)
+                    if (old.size >= 3) addReminderRow(old[0].trim().toIntOrNull() ?: 72, old[1].trim(), old[2].trim(), 0)
+                }
+            }
         }
-        reminderCard.addView(reminders, ViewGroup.LayoutParams(-1, 150))
+        reminderCard.addView(actionButton("+ ADD WAVE ALERT", false) {
+            addReminderRow(72, "Blue Dragon", "LIB", 0)
+        }, LinearLayout.LayoutParams(-1, 44).apply { topMargin = 8 })
         sound = CheckBox(this).apply {
             text = "Sound alerts"; setTextColor(Color.WHITE)
             buttonTintList = android.content.res.ColorStateList.valueOf(cyan)
@@ -212,10 +224,70 @@ class MainActivity : Activity() {
             .putInt("interval", read(normalLength, 60).coerceAtLeast(5))
             .putInt("wave40", read(wave40Length, 90))
             .putInt("wave60", read(wave60Length, 90))
-            .putString("reminders", reminders.text.toString())
+            .putString("reminders", reminderRows.map { row ->
+                "${row.wave.selectedItemPosition + 1}|${row.unit.selectedItem}|${row.action.selectedItem}|${row.lead.selectedItemPosition}"
+            }.joinToString("\n"))
             .putBoolean("sound", sound.isChecked)
             .putBoolean("vibration", vibration.isChecked)
             .apply()
+    }
+
+    private fun addReminderRow(waveValue: Int, unitValue: String, actionValue: String, leadValue: Int) {
+        val rowCard = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(10, 9, 10, 10)
+            background = gradient(intArrayOf(Color.rgb(12, 22, 37), Color.rgb(12, 22, 37)), 12, Color.rgb(42, 66, 87))
+        }
+        fun spinner(items: List<String>, selected: String): Spinner {
+            val view = Spinner(this)
+            view.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, items)
+            view.setSelection(items.indexOf(selected).takeIf { it >= 0 } ?: 0)
+            return view
+        }
+        val wave = spinner((1..100).map { "Wave $it" }, "Wave ${waveValue.coerceIn(1,100)}")
+        val units = listOf("Blue Dragon", "Ivy Whisper", "Witch Doctor", "Custom unit")
+        val unit = spinner(units, unitValue)
+        val actions = listOf("LIB", "PLACE", "UPGRADE", "SELL", "PLACE + SSS cooldown gem")
+        val action = spinner(actions, actionValue)
+        val leads = (0..10).map { if (it == 0) "At target wave" else "$it wave${if (it == 1) "" else "s"} early" }
+        val lead = spinner(leads, leads[leadValue.coerceIn(0,10)])
+        val custom = EditText(this).apply {
+            hint = "Custom unit name (optional)"
+            setText(if (unitValue !in units) unitValue else "")
+            setTextColor(Color.WHITE); setHintTextColor(muted); textSize = 13f
+            setPadding(9, 4, 9, 4)
+            background = gradient(intArrayOf(Color.rgb(19, 31, 48), Color.rgb(19, 31, 48)), 8, Color.rgb(42, 66, 87))
+            visibility = if (unitValue == "Custom unit") View.VISIBLE else View.GONE
+        }
+        unit.onItemSelectedListener = object : android.widget.AdapterView.OnItemSelectedListener {
+            override fun onNothingSelected(parent: android.widget.AdapterView<*>?) {}
+            override fun onItemSelected(parent: android.widget.AdapterView<*>?, view: View?, position: Int, id: Long) {
+                custom.visibility = if (units[position] == "Custom unit") View.VISIBLE else View.GONE
+            }
+        }
+        rowCard.addView(TextView(this).apply {
+            text = "TARGET WAVE"; setTextColor(cyan); textSize = 10f; typeface = Typeface.DEFAULT_BOLD
+        })
+        rowCard.addView(wave, LinearLayout.LayoutParams(-1, 46))
+        rowCard.addView(TextView(this).apply {
+            text = "UNIT"; setTextColor(muted); textSize = 10f
+        })
+        rowCard.addView(unit, LinearLayout.LayoutParams(-1, 46))
+        rowCard.addView(custom, LinearLayout.LayoutParams(-1, 42))
+        rowCard.addView(TextView(this).apply {
+            text = "ACTION"; setTextColor(muted); textSize = 10f
+        })
+        rowCard.addView(action, LinearLayout.LayoutParams(-1, 46))
+        rowCard.addView(TextView(this).apply {
+            text = "EARLY WARNING"; setTextColor(muted); textSize = 10f
+        })
+        rowCard.addView(lead, LinearLayout.LayoutParams(-1, 46))
+        rowCard.addView(actionButton("REMOVE ALERT", false) {
+            reminderRows.removeAll { it.wave === wave }
+            reminderList.removeView(rowCard)
+        }, LinearLayout.LayoutParams(-1, 38).apply { topMargin = 5 })
+        reminderRows.add(ReminderRow(wave, unit, action, lead, custom))
+        reminderList.addView(rowCard, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = 9 })
     }
 
     private fun startOverlay() {
