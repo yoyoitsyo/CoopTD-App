@@ -225,7 +225,7 @@ class MainActivity : Activity() {
             .putInt("wave40", read(wave40Length, 90))
             .putInt("wave60", read(wave60Length, 90))
             .putString("reminders", reminderRows.map { row ->
-                "${row.wave.selectedItemPosition + 1}|${row.unit.selectedItem}|${row.action.selectedItem}|${row.lead.selectedItemPosition}"
+                "${row.wave.selectedItemPosition + 1}|${if (row.unit.selectedItem == "Custom unit") row.custom.text.toString().trim().ifBlank { "Custom unit" } else row.unit.selectedItem}|${row.action.selectedItem}|${row.lead.selectedItemPosition}"
             }.joinToString("\n"))
             .putBoolean("sound", sound.isChecked)
             .putBoolean("vibration", vibration.isChecked)
