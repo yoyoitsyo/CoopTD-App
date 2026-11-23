@@ -285,8 +285,12 @@ class OverlayService : Service() {
         val remaining = (durationForWave(wave) - elapsed).coerceAtLeast(0L)
         waveText?.text = "WAVE $wave"
         countdownText?.text = if (paused) "PAUSED · " + formatTime(remainingWhenPaused) else formatTime(remaining)
-        val upcoming = reminders().firstOrNull { it.first > wave }
-        val reminderLine = upcoming?.let { "NEXT: ${it.second} · WAVE ${it.first}" } ?: "No upcoming reminders"
+        val upcoming = reminders().filter { it.wave - it.lead > wave }.minByOrNull { it.wave - it.lead }
+        val reminderLine = upcoming?.let {
+            val triggerWave = it.wave - it.lead
+            val prefix = if (it.lead > 0) "HEADS-UP" else "NEXT"
+            "$prefix: ${it.action} ${it.unit} · WAVE ${it.wave} (alert at $triggerWave)"
+        } ?: "No upcoming reminders"
         nextText?.text = if (autoSync) "● AUTO SYNC ON  ·  $reminderLine" else reminderLine
         if (Build.VERSION.SDK_INT >= 26) {
             getSystemService(NotificationManager::class.java).notify(17, notification("Wave $wave · ${formatTime(remaining)}"))
