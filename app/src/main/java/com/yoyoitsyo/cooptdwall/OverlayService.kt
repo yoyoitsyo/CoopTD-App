@@ -25,6 +25,7 @@ import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 
 class OverlayService : Service() {
+    private data class ReminderEntry(val wave: Int, val unit: String, val action: String, val lead: Int)
     companion object {
         const val ACTION_START = "START"
         const val ACTION_STOP = "STOP"
@@ -435,7 +436,7 @@ class OverlayService : Service() {
                 canvas.drawText("SET WAVE CAPTURE AREA", 22f * density, 42f * density, white)
                 canvas.drawText("Drag a box around the wave number.", 22f * density, 68f * density, muted)
                 canvas.drawText("Make it tight enough to exclude nearby text.", 22f * density, 88f * density, muted)
-                if (hasSelection) {
+                if (hasSelection || drawing) {
                     canvas.drawRoundRect(rect, 8f * density, 8f * density, fill)
                     canvas.drawRoundRect(rect, 8f * density, 8f * density, border)
                     canvas.drawCircle(rect.left, rect.top, 7f * density, savePaint)
@@ -452,6 +453,13 @@ class OverlayService : Service() {
                 canvas.drawText("Draw again to change the selection.", 22f * density, height - 28f * density, muted)
             }
 
+            private var dragMode = 0
+            private var activeCorner = 0
+            private var downX = 0f
+            private var downY = 0f
+            private var startRect = RectF()
+            private val handleRadius = 30f * density
+
             override fun onTouchEvent(event: MotionEvent): Boolean {
                 when (event.action) {
                     MotionEvent.ACTION_DOWN -> {
@@ -460,27 +468,69 @@ class OverlayService : Service() {
                             return true
                         }
                         if (event.y < 105f * density || event.y > height - 105f * density) return true
-                        startX = event.x; startY = event.y
-                        rect.set(startX, startY, startX, startY)
-                        drawing = true; hasSelection = false
-                        invalidate()
+                        downX = event.x
+                        downY = event.y
+                        startRect.set(rect)
+                        val corners = listOf(
+                            rect.left to rect.top, rect.right to rect.top,
+                            rect.left to rect.bottom, rect.right to rect.bottom
+                        )
+                        activeCorner = corners.indexOfFirst { (x, y) ->
+                            hasSelection && kotlin.math.hypot((event.x - x).toDouble(), (event.y - y).toDouble()) <= handleRadius
+                        }
+                        dragMode = when {
+                            activeCorner >= 0 -> 2
+                            hasSelection && rect.contains(event.x, event.y) -> 1
+                            else -> 0
+                        }
+                        if (dragMode == 0) {
+                            rect.set(event.x, event.y, event.x, event.y)
+                            hasSelection = false
+                        }
+                        drawing = true
+                        postInvalidateOnAnimation()
                         return true
                     }
                     MotionEvent.ACTION_MOVE -> if (drawing) {
-                        rect.set(minOf(startX, event.x), minOf(startY, event.y), maxOf(startX, event.x), maxOf(startY, event.y))
-                        invalidate()
+                        val dx = event.x - downX
+                        val dy = event.y - downY
+                        when (dragMode) {
+                            0 -> rect.set(minOf(downX, event.x), minOf(downY, event.y), maxOf(downX, event.x), maxOf(downY, event.y))
+                            1 -> {
+                                val left = (startRect.left + dx).coerceIn(0f, width - startRect.width())
+                                val top = (startRect.top + dy).coerceIn(105f * density, height - 105f * density - startRect.height())
+                                rect.set(left, top, left + startRect.width(), top + startRect.height())
+                            }
+                            2 -> {
+                                val leftSide = activeCorner == 0 || activeCorner == 2
+                                val topSide = activeCorner == 0 || activeCorner == 1
+                                val minSize = 24f * density
+                                val l = if (leftSide) (startRect.left + dx).coerceIn(0f, startRect.right - minSize) else startRect.left
+                                val r = if (!leftSide) (startRect.right + dx).coerceIn(startRect.left + minSize, width.toFloat()) else startRect.right
+                                val t = if (topSide) (startRect.top + dy).coerceIn(105f * density, startRect.bottom - minSize) else startRect.top
+                                val bt = if (!topSide) (startRect.bottom + dy).coerceIn(startRect.top + minSize, height - 105f * density) else startRect.bottom
+                                rect.set(l, t, r, bt)
+                            }
+                        }
+                        postInvalidateOnAnimation()
                         return true
                     }
                     MotionEvent.ACTION_UP -> if (drawing) {
                         drawing = false
-                        rect.set(minOf(startX, event.x), minOf(startY, event.y), maxOf(startX, event.x), maxOf(startY, event.y))
+                        hasSelection = rect.width() >= 24f * density && rect.height() >= 18f * density
+                        postInvalidateOnAnimation()
+                        return true
+                    }
+                    MotionEvent.ACTION_CANCEL -> {
+                        drawing = false
+                        rect.set(startRect)
                         hasSelection = rect.width() >= 24f * density && rect.height() >= 18f * density
                         invalidate()
                         return true
                     }
                 }
                 return true
-            }
+            }}
         }
         val params = WindowManager.LayoutParams(
             WindowManager.LayoutParams.MATCH_PARENT,
@@ -588,26 +638,36 @@ class OverlayService : Service() {
         overlay?.alpha = opacity
     }
 
-    private fun reminders(): List<Pair<Int, String>> =
+    private fun reminders(): List<ReminderEntry> =
         prefs.getString("reminders", "").orEmpty().lines().mapNotNull { line ->
-            val parts = line.split(",", limit = 3)
-            val number = parts.getOrNull(0)?.trim()?.toIntOrNull()
-            if (number != null && parts.size >= 2) number to parts.drop(1).joinToString(",").trim() else null
-        }.sortedBy { it.first }
+            if (line.isBlank()) return@mapNotNull null
+            val modern = line.split("|", limit = 4)
+            if (modern.size >= 4) {
+                val number = modern[0].toIntOrNull() ?: return@mapNotNull null
+                ReminderEntry(number, modern[1], modern[2], modern[3].toIntOrNull()?.coerceIn(0,10) ?: 0)
+            } else {
+                val old = line.split(",", limit = 3)
+                val number = old.getOrNull(0)?.trim()?.toIntOrNull() ?: return@mapNotNull null
+                ReminderEntry(number, old.getOrNull(1)?.trim().orEmpty(), old.getOrNull(2)?.trim().orEmpty(), 0)
+            }
+        }.sortedBy { it.wave }
 
     private fun checkReminder() {
-        if (wave == lastAlert) return
-        val match = reminders().firstOrNull { it.first == wave } ?: return
+        val matches = reminders().filter { it.wave - it.lead == wave }
+        if (matches.isEmpty() || wave == lastAlert) return
         lastAlert = wave
-        if (prefs.getBoolean("sound", true)) {
-            try { ToneGenerator(AudioManager.STREAM_NOTIFICATION, 80).startTone(ToneGenerator.TONE_PROP_BEEP, 250) } catch (_: Exception) {}
+        matches.forEachIndexed { index, match ->
+            if (prefs.getBoolean("sound", true)) {
+                try { ToneGenerator(AudioManager.STREAM_NOTIFICATION, 80).startTone(ToneGenerator.TONE_PROP_BEEP, 250) } catch (_: Exception) {}
+            }
+            if (prefs.getBoolean("vibration", true)) {
+                val vibrator = getSystemService(VIBRATOR_SERVICE) as Vibrator
+                if (Build.VERSION.SDK_INT >= 26) vibrator.vibrate(VibrationEffect.createOneShot(350, VibrationEffect.DEFAULT_AMPLITUDE))
+                else @Suppress("DEPRECATION") vibrator.vibrate(350)
+            }
+            val whenText = if (match.lead > 0) "Heads-up for Wave ${match.wave}" else "Wave ${match.wave}"
+            getSystemService(NotificationManager::class.java).notify(180 + index, notification("$whenText: ${match.action} ${match.unit}"))
         }
-        if (prefs.getBoolean("vibration", true)) {
-            val vibrator = getSystemService(VIBRATOR_SERVICE) as Vibrator
-            if (Build.VERSION.SDK_INT >= 26) vibrator.vibrate(VibrationEffect.createOneShot(350, VibrationEffect.DEFAULT_AMPLITUDE))
-            else @Suppress("DEPRECATION") vibrator.vibrate(350)
-        }
-        getSystemService(NotificationManager::class.java).notify(18, notification("REMINDER: ${match.second} — Wave $wave"))
     }
 
     override fun onDestroy() {
