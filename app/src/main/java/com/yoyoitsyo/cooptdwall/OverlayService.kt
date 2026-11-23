@@ -211,8 +211,10 @@ class OverlayService : Service() {
 
         fun button(label: String, action: () -> Unit) = Button(this).apply {
             text = label
-            textSize = 11f
+            textSize = 9f
             setTextColor(Color.WHITE)
+            backgroundTintList = null
+            stateListAnimator = null
             background = GradientDrawable(
                 GradientDrawable.Orientation.LEFT_RIGHT,
                 intArrayOf(Color.rgb(31, 65, 88), Color.rgb(21, 45, 67))
@@ -222,17 +224,18 @@ class OverlayService : Service() {
             }
             setPadding(2, 0, 2, 0)
             minWidth = 38
+            isAllCaps = false
             setOnClickListener { action() }
         }
         val controls = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
-        controls.addView(button("−") { correctWave(-1) }, LinearLayout.LayoutParams(0, 42, 1f))
+        controls.addView(button("WAVE -1") { correctWave(-1) }, LinearLayout.LayoutParams(0, 42, 1.2f))
         pauseButton = button("PAUSE") { togglePause() }
-        controls.addView(pauseButton, LinearLayout.LayoutParams(0, 42, 2f))
-        controls.addView(button("+") { correctWave(1) }, LinearLayout.LayoutParams(0, 42, 1f))
+        controls.addView(pauseButton, LinearLayout.LayoutParams(0, 42, 1.4f))
+        controls.addView(button("WAVE +1") { correctWave(1) }, LinearLayout.LayoutParams(0, 42, 1.2f))
         val appearance = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
-        appearance.addView(button("A−") { changeScale(-0.1f) }, LinearLayout.LayoutParams(0, 38, 1f))
-        appearance.addView(button("A+") { changeScale(0.1f) }, LinearLayout.LayoutParams(0, 38, 1f))
-        appearance.addView(button("◐") { changeOpacity() }, LinearLayout.LayoutParams(0, 38, 1f))
+        appearance.addView(button("SMALLER") { changeScale(-0.1f) }, LinearLayout.LayoutParams(0, 38, 1.2f))
+        appearance.addView(button("LARGER") { changeScale(0.1f) }, LinearLayout.LayoutParams(0, 38, 1.2f))
+        appearance.addView(button("OPACITY") { changeOpacity() }, LinearLayout.LayoutParams(0, 38, 1.2f))
 
         box.addView(header)
         box.addView(waveText)
@@ -312,7 +315,7 @@ class OverlayService : Service() {
             imageReader?.setOnImageAvailableListener({ reader ->
                 val image = try { reader.acquireLatestImage() } catch (_: Exception) { null } ?: return@setOnImageAvailableListener
                 val now = SystemClock.elapsedRealtime()
-                if (!autoSync || scanInFlight || now - lastScanAt < 850L) {
+                if (!autoSync || scanInFlight || now - lastScanAt < 350L) {
                     image.close()
                     return@setOnImageAvailableListener
                 }
@@ -344,20 +347,39 @@ class OverlayService : Service() {
                 textRecognizer.process(InputImage.fromBitmap(crop, 0))
                     .addOnSuccessListener { result ->
                         val detected = parseWaveNumber(result.text)
+                        val gameRemaining = parseRemainingMillis(result.text)
                         if (detected != null && detected in 0..200) {
                             if (detected == pendingWave) pendingWaveCount++ else {
                                 pendingWave = detected
                                 pendingWaveCount = 1
                             }
-                            if (pendingWaveCount >= 2 && detected != wave) {
-                                wave = detected
-                                waveStartedAt = SystemClock.elapsedRealtime()
-                                remainingWhenPaused = durationForWave(wave)
-                                paused = false
-                                lastAlert = -1
-                                pauseButton?.text = "PAUSE"
-                                nextText?.text = "● SYNCED TO GAME  ·  WAVE $wave"
-                                refresh()
+                            if (pendingWaveCount >= 2) {
+                                val nowSync = SystemClock.elapsedRealtime()
+                                val waveChanged = detected != wave
+                                if (waveChanged) {
+                                    wave = detected
+                                    paused = false
+                                    lastAlert = -1
+                                    pauseButton?.text = "PAUSE"
+                                }
+                                if (gameRemaining != null) {
+                                    val duration = durationForWave(wave)
+                                    val remaining = gameRemaining.coerceIn(0L, duration)
+                                    val currentRemaining = (duration - (nowSync - waveStartedAt)).coerceAtLeast(0L)
+                                    if (waveChanged || kotlin.math.abs(currentRemaining - remaining) > 1200L) {
+                                        waveStartedAt = nowSync - (duration - remaining)
+                                        remainingWhenPaused = remaining
+                                    }
+                                } else if (waveChanged) {
+                                    waveStartedAt = nowSync
+                                    remainingWhenPaused = durationForWave(wave)
+                                }
+                                if (waveChanged || gameRemaining != null) {
+                                    nextText?.text = if (gameRemaining != null)
+                                        "● SYNCED  ·  WAVE $wave + GAME TIMER"
+                                    else "● SYNCED TO GAME  ·  WAVE $wave"
+                                    refresh()
+                                }
                             }
                         }
                     }
@@ -437,9 +459,8 @@ class OverlayService : Service() {
             override fun onDraw(canvas: Canvas) {
                 super.onDraw(canvas)
                 canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), shade)
-                canvas.drawText("SET WAVE CAPTURE AREA", 22f * density, 42f * density, white)
-                canvas.drawText("Drag a box around the wave number.", 22f * density, 68f * density, muted)
-                canvas.drawText("Make it tight enough to exclude nearby text.", 22f * density, 88f * density, muted)
+                canvas.drawText("DRAG AROUND WAVE + COUNTDOWN", 22f * density, height - 112f * density, white)
+                canvas.drawText("Include the wave label and its seconds timer.", 22f * density, height - 94f * density, muted)
                 if (hasSelection || drawing) {
                     canvas.drawRoundRect(rect, 8f * density, 8f * density, fill)
                     canvas.drawRoundRect(rect, 8f * density, 8f * density, border)
@@ -448,13 +469,13 @@ class OverlayService : Service() {
                 }
                 val bw = 190f * density
                 val bh = 48f * density
-                buttonRect.set((width - bw) / 2f, height - 90f * density, (width + bw) / 2f, height - 90f * density + bh)
+                buttonRect.set((width - bw) / 2f, height - 76f * density, (width + bw) / 2f, height - 76f * density + bh)
                 savePaint.alpha = if (hasSelection) 255 else 90
                 canvas.drawRoundRect(buttonRect, 12f * density, 12f * density, savePaint)
                 white.textAlign = Paint.Align.CENTER
                 canvas.drawText("SAVE CAPTURE AREA", buttonRect.centerX(), buttonRect.centerY() + 5f * density, white)
                 white.textAlign = Paint.Align.LEFT
-                canvas.drawText("Draw again to change the selection.", 22f * density, height - 28f * density, muted)
+                canvas.drawText("Drag inside to move • use corner handles to resize", 22f * density, height - 12f * density, muted)
             }
 
             private var dragMode = 0
@@ -471,7 +492,6 @@ class OverlayService : Service() {
                             saveCaptureArea(rect)
                             return true
                         }
-                        if (event.y < 105f * density || event.y > height - 105f * density) return true
                         downX = event.x
                         downY = event.y
                         startRect.set(rect)
@@ -502,7 +522,7 @@ class OverlayService : Service() {
                             0 -> rect.set(minOf(downX, event.x), minOf(downY, event.y), maxOf(downX, event.x), maxOf(downY, event.y))
                             1 -> {
                                 val left = (startRect.left + dx).coerceIn(0f, width - startRect.width())
-                                val top = (startRect.top + dy).coerceIn(105f * density, height - 105f * density - startRect.height())
+                                val top = (startRect.top + dy).coerceIn(0f, height - startRect.height())
                                 rect.set(left, top, left + startRect.width(), top + startRect.height())
                             }
                             2 -> {
@@ -511,8 +531,8 @@ class OverlayService : Service() {
                                 val minSize = 24f * density
                                 val l = if (leftSide) (startRect.left + dx).coerceIn(0f, startRect.right - minSize) else startRect.left
                                 val r = if (!leftSide) (startRect.right + dx).coerceIn(startRect.left + minSize, width.toFloat()) else startRect.right
-                                val t = if (topSide) (startRect.top + dy).coerceIn(105f * density, startRect.bottom - minSize) else startRect.top
-                                val bt = if (!topSide) (startRect.bottom + dy).coerceIn(startRect.top + minSize, height - 105f * density) else startRect.bottom
+                                val t = if (topSide) (startRect.top + dy).coerceIn(0f, startRect.bottom - minSize) else startRect.top
+                                val bt = if (!topSide) (startRect.bottom + dy).coerceIn(startRect.top + minSize, height.toFloat()) else startRect.bottom
                                 rect.set(l, t, r, bt)
                             }
                         }
@@ -574,6 +594,18 @@ class OverlayService : Service() {
         val normalized = text.replace("\\n", " ").replace(Regex("\\s+"), " ")
         val match = Regex("(?i)\\bwave\\s*[:#-]?\\s*(\\d{1,3})\\b").find(normalized)
         return match?.groupValues?.getOrNull(1)?.toIntOrNull()
+    }
+
+    private fun parseRemainingMillis(text: String): Long? {
+        val normalized = text.replace("\\n", " ").replace(Regex("\\s+"), " ")
+        val clock = Regex("\\b(\\d{1,2}):([0-5]\\d)\\b").find(normalized)
+        if (clock != null) {
+            val minutes = clock.groupValues[1].toLongOrNull() ?: return null
+            val seconds = clock.groupValues[2].toLongOrNull() ?: return null
+            return (minutes * 60L + seconds) * 1000L
+        }
+        val secondsOnly = Regex("(?i)\\b(\\d{1,3})\\s*s\\b").find(normalized)
+        return secondsOnly?.groupValues?.getOrNull(1)?.toLongOrNull()?.times(1000L)
     }
 
     private fun stopScreenCapture() {
