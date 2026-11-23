@@ -40,8 +40,8 @@ class OverlayService : Service() {
     private fun createOverlay() {
         val box = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(16, 12, 16, 12); setBackgroundColor(Color.rgb(25, 29, 42)) }
         val head = TextView(this).apply { text = "COOPTD WALL ASSIST  ⋮"; setTextColor(Color.WHITE); textSize = 13f }
-        val waveText = TextView(this).apply { textSize = 25f; textColor(Color.WHITE) }
-        val nextText = TextView(this).apply { textSize = 14f; textColor(Color.rgb(130, 210, 255)) }
+        val waveText = TextView(this).apply { textSize = 25f; setTextColor(Color.WHITE) }
+        val nextText = TextView(this).apply { textSize = 14f; setTextColor(Color.rgb(130, 210, 255)) }
         val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
         fun button(s: String, f: () -> Unit) = Button(this).apply { text = s; textSize = 12f; setPadding(4, 0, 4, 0); setOnClickListener { f() } }
         row.addView(button("−") { wave = (wave - 1).coerceAtLeast(0); rebase() }, LinearLayout.LayoutParams(0, 44, 1f))
