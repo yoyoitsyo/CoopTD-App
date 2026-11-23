@@ -120,9 +120,13 @@ class MainActivity : Activity() {
             saveSettings()
             startOverlay()
         }, LinearLayout.LayoutParams(-1, 54).apply { bottomMargin = 10 })
-        root.addView(actionButton("SYNC TO GAME SCREEN  ·  BETA", false) {
+        root.addView(actionButton("SET / ADJUST CAPTURE AREA", false) {
             saveSettings()
-            requestScreenSync()
+            requestScreenSync(true)
+        }, LinearLayout.LayoutParams(-1, 52).apply { bottomMargin = 10 })
+        root.addView(actionButton("START AUTO WAVE SYNC", false) {
+            saveSettings()
+            requestScreenSync(false)
         }, LinearLayout.LayoutParams(-1, 52).apply { bottomMargin = 10 })
         root.addView(actionButton("SAVE SETTINGS", false) {
             saveSettings()
@@ -225,7 +229,7 @@ class MainActivity : Activity() {
         moveTaskToBack(true)
     }
 
-    private fun requestScreenSync() {
+    private fun requestScreenSync(calibrate: Boolean) {
         if (!Settings.canDrawOverlays(this)) {
             Toast.makeText(this, "Allow display over other apps first, then tap screen sync again", Toast.LENGTH_LONG).show()
             startActivityForResult(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName")), 9)
@@ -243,6 +247,7 @@ class MainActivity : Activity() {
                 action = OverlayService.ACTION_START_SCAN
                 putExtra(OverlayService.EXTRA_RESULT_CODE, resultCode)
                 putExtra(OverlayService.EXTRA_RESULT_DATA, data)
+                putExtra(OverlayService.EXTRA_CALIBRATE, calibrate)
             }
             if (Build.VERSION.SDK_INT >= 26) startForegroundService(serviceIntent) else startService(serviceIntent)
             Toast.makeText(this, "Screen sync starting…", Toast.LENGTH_SHORT).show()
