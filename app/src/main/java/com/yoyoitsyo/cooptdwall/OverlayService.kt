@@ -96,18 +96,23 @@ class OverlayService : Service() {
             stopSelf()
             return START_NOT_STICKY
         }
-        val captureData = if (intent?.action == ACTION_START_SCAN) {
-            if (Build.VERSION.SDK_INT >= 33) intent.getParcelableExtra(EXTRA_RESULT_DATA, Intent::class.java)
-            else @Suppress("DEPRECATION") (intent.getParcelableExtra(EXTRA_RESULT_DATA) as? Intent)
+        @Suppress("DEPRECATION")
+        val captureData: Intent? = if (intent?.action == ACTION_START_SCAN) {
+            if (Build.VERSION.SDK_INT >= 33) intent?.getParcelableExtra(EXTRA_RESULT_DATA, Intent::class.java)
+            else intent?.getParcelableExtra(EXTRA_RESULT_DATA) as? Intent
         } else null
         val hasCapture = intent?.action == ACTION_START_SCAN && captureData != null
-        val foregroundTypes = if (hasCapture) {
-            ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE or ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION
-        } else {
-            ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
+        val foregroundNote = notification(if (hasCapture) "Starting automatic wave sync…" else "Timer ready")
+        when {
+            Build.VERSION.SDK_INT >= 34 -> {
+                val types = ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE or
+                    (if (hasCapture) ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION else 0)
+                startForeground(17, foregroundNote, types)
+            }
+            Build.VERSION.SDK_INT >= 29 && hasCapture ->
+                startForeground(17, foregroundNote, ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION)
+            else -> startForeground(17, foregroundNote)
         }
-        if (Build.VERSION.SDK_INT >= 29) startForeground(17, notification(if (hasCapture) "Starting automatic wave sync…" else "Timer ready"), foregroundTypes)
-        else startForeground(17, notification("Timer ready"))
         if (overlay == null) {
             wave = 0
             waveStartedAt = SystemClock.elapsedRealtime()
