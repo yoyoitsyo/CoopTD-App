@@ -195,7 +195,6 @@ class OverlayService : Service() {
             textSize = 22f
             maxLines = 1
             includeFontPadding = false
-            autoSizeTextType = TextView.AUTO_SIZE_TEXT_TYPE_UNIFORM
             setAutoSizeTextTypeUniformWithConfiguration(16, 22, 1, android.util.TypedValue.COMPLEX_UNIT_SP)
             setTextColor(Color.WHITE)
             setTypeface(null, android.graphics.Typeface.BOLD)
@@ -205,7 +204,6 @@ class OverlayService : Service() {
             textSize = 16f
             maxLines = 1
             includeFontPadding = false
-            autoSizeTextType = TextView.AUTO_SIZE_TEXT_TYPE_UNIFORM
             setAutoSizeTextTypeUniformWithConfiguration(12, 16, 1, android.util.TypedValue.COMPLEX_UNIT_SP)
             setTextColor(Color.rgb(75, 235, 185))
             setTypeface(null, android.graphics.Typeface.BOLD)
