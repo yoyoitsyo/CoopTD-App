@@ -114,7 +114,7 @@ class MainActivity : Activity() {
         }
         reminderCard.addView(actionButton("+ ADD WAVE ALERT", false) {
             addReminderRow(72, "Blue Dragon", "LIB", 0)
-        }, LinearLayout.LayoutParams(-1, 44).apply { topMargin = 8 })
+        }, LinearLayout.LayoutParams(-1, 52).apply { topMargin = 8 })
         sound = CheckBox(this).apply {
             text = "Sound alerts"; setTextColor(Color.WHITE)
             buttonTintList = android.content.res.ColorStateList.valueOf(cyan)
@@ -217,8 +217,8 @@ class MainActivity : Activity() {
         gravity = Gravity.CENTER
         textAlignment = View.TEXT_ALIGNMENT_CENTER
         includeFontPadding = true
-        minHeight = 48
-        setPadding(12, 10, 12, 10)
+        minHeight = 0
+        setPadding(10, 6, 10, 6)
         setTextColor(if (primary) Color.rgb(3, 18, 28) else Color.rgb(255, 255, 255))
         background = if (primary) gradient(intArrayOf(cyan, Color.rgb(41, 168, 206)), 14)
             else gradient(intArrayOf(Color.rgb(29, 48, 70), Color.rgb(22, 36, 56)), 14, Color.rgb(49, 83, 109))
@@ -239,10 +239,10 @@ class MainActivity : Activity() {
                     label.gravity = Gravity.CENTER
                     label.textAlignment = View.TEXT_ALIGNMENT_CENTER
                     label.includeFontPadding = true
-                    label.minHeight = 54
+                    label.minHeight = (48 * resources.displayMetrics.density).toInt()
                     label.setSingleLine(true)
                     label.ellipsize = android.text.TextUtils.TruncateAt.END
-                    label.setPadding(10, 12, 10, 12)
+                    label.setPadding(14, 8, 14, 8)
                     label.layoutParams = ViewGroup.LayoutParams(-1, -1)
                     label.background = gradient(intArrayOf(Color.rgb(20, 39, 59), Color.rgb(12, 24, 40)), 6, Color.rgb(48, 92, 120))
                     return label
@@ -250,7 +250,11 @@ class MainActivity : Activity() {
                 override fun getView(position: Int, convertView: View?, parent: ViewGroup): View = styled(position, convertView, false)
                 override fun getDropDownView(position: Int, convertView: View?, parent: ViewGroup): View = styled(position, convertView, true)
             }
-            setPopupBackgroundDrawable(gradient(intArrayOf(Color.rgb(17, 32, 50), Color.rgb(10, 20, 34)), 10, Color.rgb(48, 92, 120)))
+            background = gradient(intArrayOf(Color.rgb(20, 42, 62), Color.rgb(12, 25, 42)), 10, cyan)
+            minimumHeight = (52 * resources.displayMetrics.density).toInt()
+            setPadding(8, 0, 8, 0)
+            setPopupBackgroundDrawable(gradient(intArrayOf(Color.rgb(17, 32, 50), Color.rgb(10, 20, 34)), 10, cyan))
+            dropDownVerticalOffset = (4 * resources.displayMetrics.density).toInt()
             setSelection(options.indexOf(prefs.getString("sound_style", "Alarm")).takeIf { it >= 0 } ?: 1)
         }
     }
@@ -351,7 +355,7 @@ class MainActivity : Activity() {
         rowCard.addView(actionButton("REMOVE ALERT", false) {
             reminderRows.removeAll { it.wave === wave }
             reminderList.removeView(rowCard)
-        }, LinearLayout.LayoutParams(-1, 38).apply { topMargin = 5 })
+        }, LinearLayout.LayoutParams(-1, 46).apply { topMargin = 7 })
         reminderRows.add(ReminderRow(wave, unit, action, lead, custom))
         reminderList.addView(rowCard, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = 9 })
     }
