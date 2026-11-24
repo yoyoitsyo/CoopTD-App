@@ -77,9 +77,8 @@ class OverlayService : Service() {
 
     private val tick = object : Runnable {
         override fun run() {
-            // In auto-sync mode, OCR is the authority for wave changes.
-            // Keep rendering the countdown, but never advance the wave locally.
-            if (!paused && !autoSync) {
+            // Auto-sync is OCR-only: suspend the manual wave clock completely.
+            if (!autoSync && !paused) {
                 var elapsed = (SystemClock.elapsedRealtime() - waveStartedAt).coerceAtLeast(0L)
                 var safety = 0
                 while (elapsed >= durationForWave(wave) && safety < 100) {
@@ -193,10 +192,24 @@ class OverlayService : Service() {
                 cornerRadius = 10f * resources.displayMetrics.density
                 setStroke((1f * resources.displayMetrics.density).toInt(), Color.rgb(190, 105, 63))
             }
-            setOnClickListener { stopSelf() }
+            contentDescription = "Close floating timer"
+            isClickable = true
+            isFocusable = true
+            setOnClickListener { closeOverlay() }
+            setOnTouchListener { _, event ->
+                when (event.action) {
+                    MotionEvent.ACTION_DOWN -> true
+                    MotionEvent.ACTION_UP -> { closeOverlay(); true }
+                    MotionEvent.ACTION_CANCEL -> true
+                    else -> true
+                }
+            }
         }
         header.addView(title, LinearLayout.LayoutParams(0, 40, 1f))
-        header.addView(close, LinearLayout.LayoutParams(42, 40))
+        header.addView(close, LinearLayout.LayoutParams(
+            (44 * resources.displayMetrics.density).toInt(),
+            (44 * resources.displayMetrics.density).toInt()
+        ))
         waveText = TextView(this).apply {
             textSize = 22f
             maxLines = 1
@@ -287,28 +300,46 @@ class OverlayService : Service() {
                 val lp = windowParams ?: return false
                 when (event.action) {
                     MotionEvent.ACTION_DOWN -> {
-                        downX = event.rawX; downY = event.rawY
-                        startX = lp.x; startY = lp.y
+                        downX = event.rawX
+                        downY = event.rawY
+                        startX = lp.x
+                        startY = lp.y
                         return true
                     }
                     MotionEvent.ACTION_MOVE -> {
-                        lp.x = startX + (event.rawX - downX).toInt()
-                        lp.y = startY + (event.rawY - downY).toInt()
+                        val metrics = resources.displayMetrics
+                        val maxX = (metrics.widthPixels - box.width).coerceAtLeast(0)
+                        val maxY = (metrics.heightPixels - box.height).coerceAtLeast(0)
+                        lp.x = (startX + (event.rawX - downX).toInt()).coerceIn(0, maxX)
+                        lp.y = (startY + (event.rawY - downY).toInt()).coerceIn(0, maxY)
                         try { windowManager.updateViewLayout(box, lp) } catch (_: Exception) {}
                         return true
                     }
+                    MotionEvent.ACTION_UP -> {
+                        prefs.edit().putInt("overlay_x", lp.x).putInt("overlay_y", lp.y).apply()
+                        return true
+                    }
+                    MotionEvent.ACTION_CANCEL -> return true
                 }
                 return false
             }
         })
 
+        val density = resources.displayMetrics.density
+        val metrics = resources.displayMetrics
         val params = WindowManager.LayoutParams(
             WindowManager.LayoutParams.WRAP_CONTENT,
             WindowManager.LayoutParams.WRAP_CONTENT,
             if (Build.VERSION.SDK_INT >= 26) WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY else WindowManager.LayoutParams.TYPE_PHONE,
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
             PixelFormat.TRANSLUCENT
-        ).apply { gravity = Gravity.TOP or Gravity.END; x = 12; y = 130 }
+        ).apply {
+            gravity = Gravity.TOP or Gravity.START
+            x = prefs.getInt("overlay_x", (12 * density).toInt()).coerceAtLeast(0)
+            y = prefs.getInt("overlay_y", (130 * density).toInt()).coerceAtLeast(0)
+            x = x.coerceAtMost((metrics.widthPixels - (280 * density).toInt()).coerceAtLeast(0))
+            y = y.coerceAtMost((metrics.heightPixels - (180 * density).toInt()).coerceAtLeast(0))
+        }
         windowParams = params
         windowManager.addView(box, params)
         overlay = box
@@ -321,7 +352,11 @@ class OverlayService : Service() {
             else SystemClock.elapsedRealtime() - waveStartedAt
         val remaining = (durationForWave(wave) - elapsed).coerceAtLeast(0L)
         waveText?.text = "WAVE $wave"
-        countdownText?.text = if (paused) "PAUSED · " + formatTime(remainingWhenPaused) else formatTime(remaining)
+        countdownText?.text = when {
+            autoSync -> "OCR LOCK · MANUAL TIMER OFF"
+            paused -> "PAUSED · " + formatTime(remainingWhenPaused)
+            else -> formatTime(remaining)
+        }
         val upcoming = reminders().filter { it.wave - it.lead > wave }.minByOrNull { it.wave - it.lead }
         val reminderLine = upcoming?.let {
             val triggerWave = it.wave - it.lead
@@ -330,8 +365,20 @@ class OverlayService : Service() {
         } ?: "No upcoming reminders"
         nextText?.text = if (autoSync) "● AUTO SYNC ON  ·  $reminderLine" else reminderLine
         if (Build.VERSION.SDK_INT >= 26) {
-            getSystemService(NotificationManager::class.java).notify(17, notification("Wave $wave · ${formatTime(remaining)}"))
+            val note = if (autoSync) "Wave $wave · OCR sync (manual timer off)" else "Wave $wave · " + formatTime(remaining)
+            getSystemService(NotificationManager::class.java).notify(17, notification(note))
         }
+    }
+
+    private fun closeOverlay() {
+        handler.removeCallbacks(tick)
+        stopScreenCapture()
+        overlay?.let { view -> try { windowManager.removeView(view) } catch (_: Exception) {} }
+        overlay = null
+        windowParams = null
+        if (Build.VERSION.SDK_INT >= 24) stopForeground(STOP_FOREGROUND_REMOVE)
+        else stopForeground(true)
+        stopSelf()
     }
 
     private fun startScreenCapture(resultCode: Int, data: Intent, calibrate: Boolean) {
@@ -433,7 +480,6 @@ class OverlayService : Service() {
             )
             projection.registerCallback(object : MediaProjection.Callback() {
                 override fun onStop() {
-                    autoSync = false
                     stopScreenCapture()
                     refresh()
                 }
@@ -645,6 +691,7 @@ class OverlayService : Service() {
     }
 
     private fun stopScreenCapture() {
+        val wasAutoSync = autoSync
         calibrationView?.let { try { windowManager.removeView(it) } catch (_: Exception) {} }
         calibrationView = null
         try { virtualDisplay?.release() } catch (_: Exception) {}
@@ -654,6 +701,12 @@ class OverlayService : Service() {
         try { mediaProjection?.stop() } catch (_: Exception) {}
         mediaProjection = null
         autoSync = false
+        if (wasAutoSync) {
+            waveStartedAt = SystemClock.elapsedRealtime()
+            remainingWhenPaused = durationForWave(wave)
+            paused = false
+            pauseButton?.text = "PAUSE"
+        }
         scanInFlight = false
         pendingWave = -1
         pendingWaveCount = 0
