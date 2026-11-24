@@ -30,10 +30,10 @@ class MainActivity : Activity() {
     private lateinit var vibration: CheckBox
     private lateinit var soundStyle: Spinner
 
-    private val bg = Color.rgb(9, 14, 25)
-    private val panel = Color.rgb(19, 29, 47)
-    private val cyan = Color.rgb(48, 220, 231)
-    private val muted = Color.rgb(154, 174, 197)
+    private val bg = Color.rgb(24, 18, 13)
+    private val panel = Color.rgb(58, 43, 28)
+    private val cyan = Color.rgb(255, 190, 76)
+    private val muted = Color.rgb(218, 195, 158)
     private data class ReminderRow(val wave: Spinner, val unit: Spinner, val action: Spinner, val lead: Spinner, val custom: EditText)
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -41,30 +41,30 @@ class MainActivity : Activity() {
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(18, 18, 18, 28)
-            background = gradient(intArrayOf(bg, Color.rgb(14, 27, 43)), 0)
+            background = gradient(intArrayOf(bg, Color.rgb(39, 54, 34)), 0)
         }
 
         val hero = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(20, 22, 20, 20)
-            background = gradient(intArrayOf(Color.rgb(17, 49, 69), Color.rgb(21, 31, 53)), 22)
+            background = gradient(intArrayOf(Color.rgb(91, 62, 35), Color.rgb(43, 62, 37)), 22, Color.rgb(220, 160, 72))
         }
         hero.addView(TextView(this).apply {
-            text = "COOPTD  /  WALL ASSISTANT"
+            text = "COOP TD  /  WALL COMPANION"
             textSize = 12f
             letterSpacing = 0.16f
             setTextColor(cyan)
             typeface = Typeface.DEFAULT_BOLD
         })
         hero.addView(TextView(this).apply {
-            text = "HOLD THE WALL."
+            text = "DEFEND THE WAVES."
             textSize = 29f
             setTextColor(Color.WHITE)
             typeface = Typeface.create("sans-serif-black", Typeface.NORMAL)
             setPadding(0, 9, 0, 2)
         })
         hero.addView(TextView(this).apply {
-            text = "Wave timing • reminders • live screen sync"
+            text = "Battle timer  •  unit alerts  •  live wave sync"
             textSize = 13f
             setTextColor(muted)
         })
@@ -177,7 +177,7 @@ class MainActivity : Activity() {
     private fun card() = LinearLayout(this).apply {
         orientation = LinearLayout.VERTICAL
         setPadding(15, 14, 15, 14)
-        background = gradient(intArrayOf(panel, Color.rgb(15, 24, 40)), 18, Color.rgb(36, 59, 81))
+        background = gradient(intArrayOf(panel, Color.rgb(39, 31, 22)), 18, Color.rgb(151, 105, 54))
     }
 
     private fun sectionTitle(textValue: String) = TextView(this).apply {
@@ -206,7 +206,7 @@ class MainActivity : Activity() {
         textSize = 13f
         setTextColor(Color.WHITE)
         setPadding(12, 5, 12, 5)
-        background = gradient(intArrayOf(Color.rgb(10, 19, 32), Color.rgb(10, 19, 32)), 10, Color.rgb(43, 67, 88))
+        background = gradient(intArrayOf(Color.rgb(38, 29, 20), Color.rgb(38, 29, 20)), 10, Color.rgb(153, 111, 62))
     }
 
     private fun actionButton(label: String, primary: Boolean, action: () -> Unit) = TextView(this).apply {
@@ -219,9 +219,9 @@ class MainActivity : Activity() {
         includeFontPadding = true
         minHeight = 0
         setPadding(10, 6, 10, 6)
-        setTextColor(if (primary) Color.rgb(3, 18, 28) else Color.rgb(255, 255, 255))
-        background = if (primary) gradient(intArrayOf(cyan, Color.rgb(41, 168, 206)), 14)
-            else gradient(intArrayOf(Color.rgb(29, 48, 70), Color.rgb(22, 36, 56)), 14, Color.rgb(49, 83, 109))
+        setTextColor(if (primary) Color.rgb(43, 29, 13) else Color.rgb(255, 239, 210))
+        background = if (primary) gradient(intArrayOf(Color.rgb(255, 205, 105), Color.rgb(190, 119, 43)), 14, Color.rgb(255, 224, 148))
+            else gradient(intArrayOf(Color.rgb(91, 66, 40), Color.rgb(57, 43, 29)), 14, Color.rgb(160, 116, 62))
         isClickable = true
         isFocusable = true
         setOnClickListener { action() }
@@ -279,7 +279,7 @@ class MainActivity : Activity() {
         val rowCard = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(10, 9, 10, 10)
-            background = gradient(intArrayOf(Color.rgb(12, 22, 37), Color.rgb(12, 22, 37)), 12, Color.rgb(42, 66, 87))
+            background = gradient(intArrayOf(Color.rgb(45, 34, 23), Color.rgb(36, 28, 20)), 12, Color.rgb(153, 111, 62))
         }
         fun spinner(items: List<String>, selected: String): Spinner {
             val view = Spinner(this)
@@ -292,15 +292,15 @@ class MainActivity : Activity() {
                     label.gravity = Gravity.CENTER_VERTICAL
                     label.setPadding(12, 8, 12, 8)
                     label.background = gradient(intArrayOf(
-                        if (dropdown) Color.rgb(24, 43, 64) else Color.rgb(12, 24, 40),
-                        if (dropdown) Color.rgb(17, 32, 50) else Color.rgb(12, 24, 40)
-                    ), 6, Color.rgb(48, 92, 120))
+                        if (dropdown) Color.rgb(86, 62, 38) else Color.rgb(43, 33, 23),
+                        if (dropdown) Color.rgb(61, 45, 29) else Color.rgb(43, 33, 23)
+                    ), 6, Color.rgb(153, 111, 62))
                     return label
                 }
                 override fun getView(position: Int, convertView: View?, parent: ViewGroup): View = styled(position, convertView, false)
                 override fun getDropDownView(position: Int, convertView: View?, parent: ViewGroup): View = styled(position, convertView, true)
             }
-            view.setPopupBackgroundDrawable(gradient(intArrayOf(Color.rgb(17, 32, 50), Color.rgb(10, 20, 34)), 10, Color.rgb(48, 92, 120)))
+            view.setPopupBackgroundDrawable(gradient(intArrayOf(Color.rgb(76, 55, 34), Color.rgb(39, 29, 20)), 10, Color.rgb(218, 164, 82)))
             view.minimumHeight = (54 * resources.displayMetrics.density).toInt()
             view.setPadding(0, 0, 0, 0)
             view.setSelection(items.indexOf(selected).takeIf { it >= 0 } ?: 0)
@@ -326,13 +326,20 @@ class MainActivity : Activity() {
             includeFontPadding = true
             setSingleLine(true)
             setPadding(12, 10, 12, 10)
-            background = gradient(intArrayOf(Color.rgb(19, 31, 48), Color.rgb(19, 31, 48)), 8, Color.rgb(42, 66, 87))
+            background = gradient(intArrayOf(Color.rgb(42, 32, 23), Color.rgb(42, 32, 23)), 8, Color.rgb(142, 103, 59))
             visibility = if (unitValue == "Custom unit" || unitValue !in units) View.VISIBLE else View.GONE
+        }
+        val unitPortrait = TextView(this).apply {
+            text = unitEmoji(unitValue)
+            textSize = 27f
+            gravity = Gravity.CENTER
+            background = gradient(intArrayOf(Color.rgb(92, 66, 39), Color.rgb(50, 39, 27)), 10, Color.rgb(218, 164, 82))
         }
         unit.onItemSelectedListener = object : android.widget.AdapterView.OnItemSelectedListener {
             override fun onNothingSelected(parent: android.widget.AdapterView<*>?) {}
             override fun onItemSelected(parent: android.widget.AdapterView<*>?, view: View?, position: Int, id: Long) {
                 custom.visibility = if (units[position] == "Custom unit") View.VISIBLE else View.GONE
+                unitPortrait.text = unitEmoji(units[position])
             }
         }
         rowCard.addView(TextView(this).apply {
@@ -342,7 +349,13 @@ class MainActivity : Activity() {
         rowCard.addView(TextView(this).apply {
             text = "UNIT"; setTextColor(muted); textSize = 10f
         })
-        rowCard.addView(unit, LinearLayout.LayoutParams(-1, 56))
+        val unitPicker = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+        }
+        unitPicker.addView(unitPortrait, LinearLayout.LayoutParams((54 * resources.displayMetrics.density).toInt(), (54 * resources.displayMetrics.density).toInt()).apply { rightMargin = (8 * resources.displayMetrics.density).toInt() })
+        unitPicker.addView(unit, LinearLayout.LayoutParams(0, 56, 1f))
+        rowCard.addView(unitPicker, LinearLayout.LayoutParams(-1, 58))
         rowCard.addView(custom, LinearLayout.LayoutParams(-1, 50))
         rowCard.addView(TextView(this).apply {
             text = "ACTION"; setTextColor(muted); textSize = 10f
@@ -358,6 +371,13 @@ class MainActivity : Activity() {
         }, LinearLayout.LayoutParams(-1, 46).apply { topMargin = 7 })
         reminderRows.add(ReminderRow(wave, unit, action, lead, custom))
         reminderList.addView(rowCard, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = 9 })
+    }
+
+    private fun unitEmoji(name: String): String = when (name) {
+        "Blue Dragon" -> "🐉"
+        "Ivy Whisper" -> "🌿"
+        "Witch Doctor" -> "🧙"
+        else -> "⚔️"
     }
 
     private fun startOverlay() {
