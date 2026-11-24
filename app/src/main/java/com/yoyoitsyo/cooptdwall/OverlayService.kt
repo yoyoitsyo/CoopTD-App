@@ -34,6 +34,7 @@ class OverlayService : Service() {
         const val EXTRA_RESULT_DATA = "capture_result_data"
         const val EXTRA_CALIBRATE = "capture_calibrate"
         private const val CHANNEL = "cooptd_timer"
+        private const val ALERT_CHANNEL = "cooptd_event_alerts"
     }
 
     private val handler = Handler(Looper.getMainLooper())
@@ -42,6 +43,8 @@ class OverlayService : Service() {
     private var windowParams: WindowManager.LayoutParams? = null
     private var wave = 0
     private var waveStartedAt = 0L
+    private var syncedRemainingMs: Long? = null
+    private var syncedRemainingAt = 0L
     private var remainingWhenPaused = 0L
     private var paused = false
     private var lastAlert = -1
@@ -143,6 +146,13 @@ class OverlayService : Service() {
         if (Build.VERSION.SDK_INT >= 26) {
             val nm = getSystemService(NotificationManager::class.java)
             nm.createNotificationChannel(NotificationChannel(CHANNEL, "CoopTD timer", NotificationManager.IMPORTANCE_LOW))
+            val alerts = NotificationChannel(ALERT_CHANNEL, "CoopTD event alerts", NotificationManager.IMPORTANCE_HIGH).apply {
+                description = "Pop-up notifications for scheduled wave events"
+                setSound(null, null)
+                enableVibration(false)
+                lockscreenVisibility = Notification.VISIBILITY_PUBLIC
+            }
+            nm.createNotificationChannel(alerts)
         }
     }
 
@@ -352,8 +362,12 @@ class OverlayService : Service() {
             else SystemClock.elapsedRealtime() - waveStartedAt
         val remaining = (durationForWave(wave) - elapsed).coerceAtLeast(0L)
         waveText?.text = "WAVE $wave"
+        val syncedLeft = syncedRemainingMs?.let {
+            (it - (SystemClock.elapsedRealtime() - syncedRemainingAt)).coerceAtLeast(0L)
+        }
         countdownText?.text = when {
-            autoSync -> "OCR LOCK · MANUAL TIMER OFF"
+            autoSync && syncedLeft != null -> "● GAME TIME  " + formatTime(syncedLeft)
+            autoSync -> "OCR LOCK · WAITING FOR GAME TIMER"
             paused -> "PAUSED · " + formatTime(remainingWhenPaused)
             else -> formatTime(remaining)
         }
@@ -446,6 +460,8 @@ class OverlayService : Service() {
                                     checkReminder()
                                 }
                                 if (gameRemaining != null) {
+                                    syncedRemainingMs = gameRemaining
+                                    syncedRemainingAt = nowSync
                                     val duration = durationForWave(wave)
                                     val remaining = gameRemaining.coerceIn(0L, duration)
                                     val currentRemaining = (duration - (nowSync - waveStartedAt)).coerceAtLeast(0L)
@@ -673,9 +689,14 @@ class OverlayService : Service() {
     }
 
     private fun parseWaveNumber(text: String): Int? {
-        val normalized = text.replace("\\n", " ").replace(Regex("\\s+"), " ")
-        val match = Regex("(?i)\\bwave\\s*[:#-]?\\s*(\\d{1,3})\\b").find(normalized)
-        return match?.groupValues?.getOrNull(1)?.toIntOrNull()
+        // Wave number must be attached to the explicit WAVE label, not timer digits.
+        val lines = text.lines().map { it.trim().replace(Regex("\\s+"), " ") }
+        val exact = Regex("(?i)^WAVE\\s*[:#-]?\\s*(\\d{1,3})$")
+        val labeled = lines.firstNotNullOfOrNull { exact.matchEntire(it)?.groupValues?.getOrNull(1)?.toIntOrNull() }
+        if (labeled != null) return labeled
+        val joined = text.replace(Regex("[\\r\\n]+"), " ").replace(Regex("\\s+"), " ")
+        return Regex("(?i)\\bWAVE\\s*[:#-]?\\s*(\\d{1,3})\\b").find(joined)
+            ?.groupValues?.getOrNull(1)?.toIntOrNull()
     }
 
     private fun parseRemainingMillis(text: String): Long? {
@@ -792,6 +813,23 @@ class OverlayService : Service() {
         }
     }
 
+    private fun alertNotification(title: String, message: String): Notification {
+        val openApp = PendingIntent.getActivity(
+            this, 190, Intent(this, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val builder = if (Build.VERSION.SDK_INT >= 26) Notification.Builder(this, ALERT_CHANNEL) else Notification.Builder(this)
+        return builder.setContentTitle(title)
+            .setContentText(message)
+            .setStyle(Notification.BigTextStyle().bigText(message))
+            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setContentIntent(openApp)
+            .setAutoCancel(true)
+            .setCategory(Notification.CATEGORY_ALARM)
+            .setPriority(Notification.PRIORITY_HIGH)
+            .build()
+    }
+
     private fun checkReminder() {
         val matches = reminders().filter { it.wave - it.lead == wave }
         if (matches.isEmpty() || wave == lastAlert) return
@@ -803,8 +841,9 @@ class OverlayService : Service() {
                 if (Build.VERSION.SDK_INT >= 26) vibrator.vibrate(VibrationEffect.createOneShot(350, VibrationEffect.DEFAULT_AMPLITUDE))
                 else @Suppress("DEPRECATION") vibrator.vibrate(350)
             }
-            val whenText = if (match.lead > 0) "Heads-up for Wave ${match.wave}" else "Wave ${match.wave}"
-            getSystemService(NotificationManager::class.java).notify(180 + index, notification("$whenText: ${match.action} ${match.unit}"))
+            val whenText = if (match.lead > 0) "Heads-up · Wave ${match.wave}" else "It's time · Wave ${match.wave}"
+            val message = "${match.action} ${match.unit}".trim()
+            getSystemService(NotificationManager::class.java).notify(180 + index, alertNotification(whenText, message))
         }
     }
 
