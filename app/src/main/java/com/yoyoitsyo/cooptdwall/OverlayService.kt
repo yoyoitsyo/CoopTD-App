@@ -175,10 +175,10 @@ class OverlayService : Service() {
             setPadding(13, 10, 13, 10)
             background = GradientDrawable(
                 GradientDrawable.Orientation.TL_BR,
-                intArrayOf(Color.rgb(43, 29, 79), Color.rgb(17, 24, 57))
+                intArrayOf(Color.rgb(48, 49, 37), Color.rgb(25, 28, 21))
             ).apply {
                 cornerRadius = 18f * resources.displayMetrics.density
-                setStroke((1.2f * resources.displayMetrics.density).toInt(), Color.rgb(255, 205, 104))
+                setStroke((1.2f * resources.displayMetrics.density).toInt(), Color.rgb(220, 177, 87))
             }
             alpha = opacity
             elevation = 12f * resources.displayMetrics.density
@@ -188,7 +188,7 @@ class OverlayService : Service() {
             text = "✦  COOP TD  /  WAVE HUD"
             textSize = 10f
             letterSpacing = 0.12f
-            setTextColor(Color.rgb(255, 211, 105))
+            setTextColor(Color.rgb(247, 207, 117))
             setTypeface(null, android.graphics.Typeface.BOLD)
             setPadding(2, 5, 8, 5)
         }
@@ -198,9 +198,9 @@ class OverlayService : Service() {
             gravity = Gravity.CENTER
             setTextColor(Color.WHITE)
             background = GradientDrawable().apply {
-                setColor(Color.rgb(119, 49, 76))
+                setColor(Color.rgb(105, 54, 43))
                 cornerRadius = 10f * resources.displayMetrics.density
-                setStroke((1f * resources.displayMetrics.density).toInt(), Color.rgb(214, 105, 135))
+                setStroke((1f * resources.displayMetrics.density).toInt(), Color.rgb(191, 121, 82))
             }
             contentDescription = "Close floating timer"
             isClickable = true
@@ -215,7 +215,13 @@ class OverlayService : Service() {
                 }
             }
         }
-        header.addView(CoopArtView(this, "badge"), LinearLayout.LayoutParams((42 * resources.displayMetrics.density).toInt(), (40 * resources.displayMetrics.density).toInt()))
+        header.addView(TextView(this).apply {
+            text = "✦"
+            textSize = 23f
+            gravity = Gravity.CENTER
+            setTextColor(Color.rgb(247, 207, 117))
+            typeface = android.graphics.Typeface.DEFAULT_BOLD
+        }, LinearLayout.LayoutParams((38 * resources.displayMetrics.density).toInt(), (40 * resources.displayMetrics.density).toInt()))
         header.addView(title, LinearLayout.LayoutParams(0, 40, 1f))
         header.addView(close, LinearLayout.LayoutParams(
             (44 * resources.displayMetrics.density).toInt(),
