@@ -30,10 +30,10 @@ class MainActivity : Activity() {
     private lateinit var vibration: CheckBox
     private lateinit var soundStyle: Spinner
 
-    private val bg = Color.rgb(24, 18, 13)
-    private val panel = Color.rgb(58, 43, 28)
-    private val cyan = Color.rgb(255, 190, 76)
-    private val muted = Color.rgb(218, 195, 158)
+    private val bg = Color.rgb(10, 17, 30)
+    private val panel = Color.rgb(24, 36, 53)
+    private val cyan = Color.rgb(255, 199, 91)
+    private val muted = Color.rgb(170, 194, 214)
     private data class ReminderRow(val wave: Spinner, val unit: Spinner, val action: Spinner, val lead: Spinner, val custom: EditText)
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -47,8 +47,9 @@ class MainActivity : Activity() {
         val hero = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(20, 22, 20, 20)
-            background = gradient(intArrayOf(Color.rgb(91, 62, 35), Color.rgb(43, 62, 37)), 22, Color.rgb(220, 160, 72))
+            background = gradient(intArrayOf(Color.rgb(15, 37, 57), Color.rgb(22, 48, 58)), 22, Color.rgb(255, 199, 91))
         }
+        hero.addView(CoopArtView(this, "banner"), LinearLayout.LayoutParams(-1, 150).apply { bottomMargin = 10 })
         hero.addView(TextView(this).apply {
             text = "COOP TD  /  WALL COMPANION"
             textSize = 12f
@@ -177,7 +178,7 @@ class MainActivity : Activity() {
     private fun card() = LinearLayout(this).apply {
         orientation = LinearLayout.VERTICAL
         setPadding(15, 14, 15, 14)
-        background = gradient(intArrayOf(panel, Color.rgb(39, 31, 22)), 18, Color.rgb(151, 105, 54))
+        background = gradient(intArrayOf(panel, Color.rgb(16, 25, 40)), 18, Color.rgb(67, 127, 151))
     }
 
     private fun sectionTitle(textValue: String) = TextView(this).apply {
@@ -329,17 +330,13 @@ class MainActivity : Activity() {
             background = gradient(intArrayOf(Color.rgb(42, 32, 23), Color.rgb(42, 32, 23)), 8, Color.rgb(142, 103, 59))
             visibility = if (unitValue == "Custom unit" || unitValue !in units) View.VISIBLE else View.GONE
         }
-        val unitPortrait = TextView(this).apply {
-            text = unitEmoji(unitValue)
-            textSize = 27f
-            gravity = Gravity.CENTER
-            background = gradient(intArrayOf(Color.rgb(92, 66, 39), Color.rgb(50, 39, 27)), 10, Color.rgb(218, 164, 82))
-        }
+        val unitPortrait = CoopArtView(this, unitValue)
         unit.onItemSelectedListener = object : android.widget.AdapterView.OnItemSelectedListener {
             override fun onNothingSelected(parent: android.widget.AdapterView<*>?) {}
             override fun onItemSelected(parent: android.widget.AdapterView<*>?, view: View?, position: Int, id: Long) {
                 custom.visibility = if (units[position] == "Custom unit") View.VISIBLE else View.GONE
-                unitPortrait.text = unitEmoji(units[position])
+                unitPortrait.artType = units[position]
+                unitPortrait.invalidate()
             }
         }
         rowCard.addView(TextView(this).apply {
