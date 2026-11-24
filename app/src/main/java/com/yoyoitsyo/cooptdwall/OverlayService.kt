@@ -175,20 +175,20 @@ class OverlayService : Service() {
             setPadding(13, 10, 13, 10)
             background = GradientDrawable(
                 GradientDrawable.Orientation.TL_BR,
-                intArrayOf(Color.rgb(14, 36, 55), Color.rgb(7, 17, 30))
+                intArrayOf(Color.rgb(43, 29, 79), Color.rgb(17, 24, 57))
             ).apply {
                 cornerRadius = 18f * resources.displayMetrics.density
-                setStroke((1.2f * resources.displayMetrics.density).toInt(), Color.rgb(224, 166, 79))
+                setStroke((1.2f * resources.displayMetrics.density).toInt(), Color.rgb(255, 205, 104))
             }
             alpha = opacity
             elevation = 12f * resources.displayMetrics.density
         }
         val header = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
         val title = TextView(this).apply {
-            text = "◈  COOPTD  /  WAVE COMMAND"
+            text = "✦  COOP TD  /  WAVE HUD"
             textSize = 10f
             letterSpacing = 0.12f
-            setTextColor(Color.rgb(255, 194, 86))
+            setTextColor(Color.rgb(255, 211, 105))
             setTypeface(null, android.graphics.Typeface.BOLD)
             setPadding(2, 5, 8, 5)
         }
@@ -198,9 +198,9 @@ class OverlayService : Service() {
             gravity = Gravity.CENTER
             setTextColor(Color.WHITE)
             background = GradientDrawable().apply {
-                setColor(Color.rgb(92, 42, 31))
+                setColor(Color.rgb(119, 49, 76))
                 cornerRadius = 10f * resources.displayMetrics.density
-                setStroke((1f * resources.displayMetrics.density).toInt(), Color.rgb(190, 105, 63))
+                setStroke((1f * resources.displayMetrics.density).toInt(), Color.rgb(214, 105, 135))
             }
             contentDescription = "Close floating timer"
             isClickable = true
@@ -231,10 +231,10 @@ class OverlayService : Service() {
             setPadding(10, 8, 10, 5)
             background = GradientDrawable(
                 GradientDrawable.Orientation.LEFT_RIGHT,
-                intArrayOf(Color.rgb(18, 91, 110), Color.rgb(12, 43, 62))
+                intArrayOf(Color.rgb(89, 48, 139), Color.rgb(37, 54, 110))
             ).apply {
                 cornerRadius = 11f * resources.displayMetrics.density
-                setStroke((1f * resources.displayMetrics.density).toInt(), Color.rgb(255, 194, 86))
+                setStroke((1f * resources.displayMetrics.density).toInt(), Color.rgb(255, 211, 105))
             }
         }
         countdownText = TextView(this).apply {
@@ -242,7 +242,7 @@ class OverlayService : Service() {
             maxLines = 1
             includeFontPadding = false
             setAutoSizeTextTypeUniformWithConfiguration(12, 16, 1, android.util.TypedValue.COMPLEX_UNIT_SP)
-            setTextColor(Color.rgb(112, 235, 226))
+            setTextColor(Color.rgb(119, 231, 255))
             setTypeface(null, android.graphics.Typeface.BOLD)
             setPadding(2, 0, 2, 4)
         }
@@ -251,9 +251,9 @@ class OverlayService : Service() {
             setTextColor(Color.rgb(255, 205, 104))
             setPadding(10, 7, 10, 8)
             background = GradientDrawable().apply {
-                setColor(Color.rgb(10, 25, 40))
+                setColor(Color.rgb(26, 24, 57))
                 cornerRadius = 9f * resources.displayMetrics.density
-                setStroke((1f * resources.displayMetrics.density).toInt(), Color.rgb(54, 133, 156))
+                setStroke((1f * resources.displayMetrics.density).toInt(), Color.rgb(116, 91, 189))
             }
         }
 
@@ -268,10 +268,10 @@ class OverlayService : Service() {
             typeface = android.graphics.Typeface.create("sans-serif-condensed", android.graphics.Typeface.BOLD)
             background = GradientDrawable(
                 GradientDrawable.Orientation.TOP_BOTTOM,
-                intArrayOf(Color.rgb(25, 113, 139), Color.rgb(12, 54, 80))
+                intArrayOf(Color.rgb(104, 56, 153), Color.rgb(35, 55, 111))
             ).apply {
                 cornerRadius = 9f * resources.displayMetrics.density
-                setStroke((1f * resources.displayMetrics.density).toInt(), Color.rgb(93, 201, 212))
+                setStroke((1f * resources.displayMetrics.density).toInt(), Color.rgb(119, 222, 255))
             }
             setPadding(3, 0, 3, 0)
             minWidth = 38
@@ -536,7 +536,7 @@ class OverlayService : Service() {
         val selector = object : View(this) {
             private val shade = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.argb(205, 3, 10, 20) }
             private val border = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                color = Color.rgb(255, 194, 86); style = Paint.Style.STROKE; strokeWidth = 3f * density
+                color = Color.rgb(255, 211, 105); style = Paint.Style.STROKE; strokeWidth = 3f * density
             }
             private val fill = Paint(Paint.ANTI_ALIAS_FLAG).apply {
                 color = Color.argb(45, 48, 220, 231); style = Paint.Style.FILL
@@ -545,9 +545,9 @@ class OverlayService : Service() {
                 color = Color.WHITE; textSize = 15f * density; typeface = android.graphics.Typeface.DEFAULT_BOLD
             }
             private val muted = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                color = Color.rgb(185, 207, 224); textSize = 12f * density
+                color = Color.rgb(203, 195, 233); textSize = 12f * density
             }
-            private val savePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.rgb(27, 180, 198) }
+            private val savePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.rgb(255, 151, 87) }
             private val rect = RectF()
             private var startX = 0f
             private var startY = 0f
