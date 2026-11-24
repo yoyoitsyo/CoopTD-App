@@ -175,20 +175,20 @@ class OverlayService : Service() {
             setPadding(13, 10, 13, 10)
             background = GradientDrawable(
                 GradientDrawable.Orientation.TL_BR,
-                intArrayOf(Color.rgb(48, 49, 37), Color.rgb(25, 28, 21))
+                intArrayOf(Color.rgb(66, 45, 29), Color.rgb(25, 19, 16))
             ).apply {
                 cornerRadius = 18f * resources.displayMetrics.density
-                setStroke((1.2f * resources.displayMetrics.density).toInt(), Color.rgb(220, 177, 87))
+                setStroke((1.2f * resources.displayMetrics.density).toInt(), Color.rgb(226, 169, 83))
             }
             alpha = opacity
             elevation = 12f * resources.displayMetrics.density
         }
         val header = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
         val title = TextView(this).apply {
-            text = "✦  COOP TD  /  WAVE HUD"
+            text = "COOP TD  •  WAVE CONTROL"
             textSize = 10f
             letterSpacing = 0.12f
-            setTextColor(Color.rgb(247, 207, 117))
+            setTextColor(Color.rgb(255, 213, 139))
             setTypeface(null, android.graphics.Typeface.BOLD)
             setPadding(2, 5, 8, 5)
         }
@@ -198,9 +198,9 @@ class OverlayService : Service() {
             gravity = Gravity.CENTER
             setTextColor(Color.WHITE)
             background = GradientDrawable().apply {
-                setColor(Color.rgb(105, 54, 43))
+                setColor(Color.rgb(105, 54, 32))
                 cornerRadius = 10f * resources.displayMetrics.density
-                setStroke((1f * resources.displayMetrics.density).toInt(), Color.rgb(191, 121, 82))
+                setStroke((1f * resources.displayMetrics.density).toInt(), Color.rgb(203, 143, 76))
             }
             contentDescription = "Close floating timer"
             isClickable = true
@@ -216,7 +216,7 @@ class OverlayService : Service() {
             }
         }
         header.addView(TextView(this).apply {
-            text = "✦"
+            text = "◆"
             textSize = 23f
             gravity = Gravity.CENTER
             setTextColor(Color.rgb(247, 207, 117))
@@ -237,10 +237,10 @@ class OverlayService : Service() {
             setPadding(10, 8, 10, 5)
             background = GradientDrawable(
                 GradientDrawable.Orientation.LEFT_RIGHT,
-                intArrayOf(Color.rgb(89, 48, 139), Color.rgb(37, 54, 110))
+                intArrayOf(Color.rgb(135, 77, 39), Color.rgb(76, 48, 30))
             ).apply {
                 cornerRadius = 11f * resources.displayMetrics.density
-                setStroke((1f * resources.displayMetrics.density).toInt(), Color.rgb(255, 211, 105))
+                setStroke((1f * resources.displayMetrics.density).toInt(), Color.rgb(255, 213, 139))
             }
         }
         countdownText = TextView(this).apply {
@@ -248,18 +248,18 @@ class OverlayService : Service() {
             maxLines = 1
             includeFontPadding = false
             setAutoSizeTextTypeUniformWithConfiguration(12, 16, 1, android.util.TypedValue.COMPLEX_UNIT_SP)
-            setTextColor(Color.rgb(119, 231, 255))
+            setTextColor(Color.rgb(255, 226, 177))
             setTypeface(null, android.graphics.Typeface.BOLD)
             setPadding(2, 0, 2, 4)
         }
         nextText = TextView(this).apply {
             textSize = 11f
-            setTextColor(Color.rgb(255, 205, 104))
+            setTextColor(Color.rgb(255, 207, 126))
             setPadding(10, 7, 10, 8)
             background = GradientDrawable().apply {
-                setColor(Color.rgb(26, 24, 57))
+                setColor(Color.rgb(39, 28, 21))
                 cornerRadius = 9f * resources.displayMetrics.density
-                setStroke((1f * resources.displayMetrics.density).toInt(), Color.rgb(116, 91, 189))
+                setStroke((1f * resources.displayMetrics.density).toInt(), Color.rgb(157, 106, 60))
             }
         }
 
@@ -270,14 +270,14 @@ class OverlayService : Service() {
             includeFontPadding = false
             gravity = Gravity.CENTER
             textAlignment = View.TEXT_ALIGNMENT_CENTER
-            setTextColor(Color.rgb(255, 239, 210))
+            setTextColor(Color.rgb(255, 238, 215))
             typeface = android.graphics.Typeface.create("sans-serif-condensed", android.graphics.Typeface.BOLD)
             background = GradientDrawable(
                 GradientDrawable.Orientation.TOP_BOTTOM,
-                intArrayOf(Color.rgb(104, 56, 153), Color.rgb(35, 55, 111))
+                intArrayOf(Color.rgb(117, 74, 43), Color.rgb(57, 42, 30))
             ).apply {
                 cornerRadius = 9f * resources.displayMetrics.density
-                setStroke((1f * resources.displayMetrics.density).toInt(), Color.rgb(119, 222, 255))
+                setStroke((1f * resources.displayMetrics.density).toInt(), Color.rgb(211, 158, 88))
             }
             setPadding(3, 0, 3, 0)
             minWidth = 38
