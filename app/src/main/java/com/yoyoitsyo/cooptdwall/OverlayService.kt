@@ -175,7 +175,7 @@ class OverlayService : Service() {
             setPadding(13, 10, 13, 10)
             background = GradientDrawable(
                 GradientDrawable.Orientation.TL_BR,
-                intArrayOf(Color.rgb(68, 48, 29), Color.rgb(30, 25, 18))
+                intArrayOf(Color.rgb(14, 36, 55), Color.rgb(7, 17, 30))
             ).apply {
                 cornerRadius = 18f * resources.displayMetrics.density
                 setStroke((1.2f * resources.displayMetrics.density).toInt(), Color.rgb(224, 166, 79))
@@ -215,6 +215,7 @@ class OverlayService : Service() {
                 }
             }
         }
+        header.addView(CoopArtView(this, "badge"), LinearLayout.LayoutParams((42 * resources.displayMetrics.density).toInt(), (40 * resources.displayMetrics.density).toInt()))
         header.addView(title, LinearLayout.LayoutParams(0, 40, 1f))
         header.addView(close, LinearLayout.LayoutParams(
             (44 * resources.displayMetrics.density).toInt(),
@@ -230,7 +231,7 @@ class OverlayService : Service() {
             setPadding(10, 8, 10, 5)
             background = GradientDrawable(
                 GradientDrawable.Orientation.LEFT_RIGHT,
-                intArrayOf(Color.rgb(78, 91, 48), Color.rgb(39, 55, 31))
+                intArrayOf(Color.rgb(18, 91, 110), Color.rgb(12, 43, 62))
             ).apply {
                 cornerRadius = 11f * resources.displayMetrics.density
                 setStroke((1f * resources.displayMetrics.density).toInt(), Color.rgb(255, 194, 86))
@@ -241,7 +242,7 @@ class OverlayService : Service() {
             maxLines = 1
             includeFontPadding = false
             setAutoSizeTextTypeUniformWithConfiguration(12, 16, 1, android.util.TypedValue.COMPLEX_UNIT_SP)
-            setTextColor(Color.rgb(175, 224, 116))
+            setTextColor(Color.rgb(112, 235, 226))
             setTypeface(null, android.graphics.Typeface.BOLD)
             setPadding(2, 0, 2, 4)
         }
@@ -250,9 +251,9 @@ class OverlayService : Service() {
             setTextColor(Color.rgb(255, 205, 104))
             setPadding(10, 7, 10, 8)
             background = GradientDrawable().apply {
-                setColor(Color.rgb(38, 31, 22))
+                setColor(Color.rgb(10, 25, 40))
                 cornerRadius = 9f * resources.displayMetrics.density
-                setStroke((1f * resources.displayMetrics.density).toInt(), Color.rgb(142, 111, 69))
+                setStroke((1f * resources.displayMetrics.density).toInt(), Color.rgb(54, 133, 156))
             }
         }
 
@@ -267,10 +268,10 @@ class OverlayService : Service() {
             typeface = android.graphics.Typeface.create("sans-serif-condensed", android.graphics.Typeface.BOLD)
             background = GradientDrawable(
                 GradientDrawable.Orientation.TOP_BOTTOM,
-                intArrayOf(Color.rgb(143, 99, 49), Color.rgb(75, 52, 30))
+                intArrayOf(Color.rgb(25, 113, 139), Color.rgb(12, 54, 80))
             ).apply {
                 cornerRadius = 9f * resources.displayMetrics.density
-                setStroke((1f * resources.displayMetrics.density).toInt(), Color.rgb(224, 166, 79))
+                setStroke((1f * resources.displayMetrics.density).toInt(), Color.rgb(93, 201, 212))
             }
             setPadding(3, 0, 3, 0)
             minWidth = 38
