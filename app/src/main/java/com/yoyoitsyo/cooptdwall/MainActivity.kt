@@ -231,7 +231,7 @@ class MainActivity : Activity() {
                 private fun styled(position: Int, convertView: View?, dropdown: Boolean): View {
                     val label = (convertView as? TextView) ?: TextView(this@MainActivity)
                     label.text = options[position]
-                    label.textSize = 12f
+                    label.textSize = 17f
                     label.setTextColor(Color.WHITE)
                     label.gravity = Gravity.CENTER
                     label.textAlignment = View.TEXT_ALIGNMENT_CENTER
@@ -275,7 +275,7 @@ class MainActivity : Activity() {
     private fun addReminderRow(waveValue: Int, unitValue: String, actionValue: String, leadValue: Int) {
         val rowCard = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(10, 9, 10, 10)
+            setPadding(14, 14, 14, 14)
             background = gradient(intArrayOf(Color.rgb(74, 53, 37), Color.rgb(42, 31, 24)), 7, Color.rgb(170, 117, 65))
         }
         fun spinner(items: List<String>, selected: String): Spinner {
@@ -287,7 +287,7 @@ class MainActivity : Activity() {
                     label.textSize = 12f
                     label.setTextColor(Color.WHITE)
                     label.gravity = Gravity.CENTER_VERTICAL
-                    label.setPadding(12, 8, 12, 8)
+                    label.setPadding(16, 14, 16, 14)
                     label.background = gradient(intArrayOf(
                         if (dropdown) Color.rgb(95, 65, 39) else Color.rgb(39, 29, 23),
                         if (dropdown) Color.rgb(68, 47, 32) else Color.rgb(39, 29, 23)
@@ -298,7 +298,7 @@ class MainActivity : Activity() {
                 override fun getDropDownView(position: Int, convertView: View?, parent: ViewGroup): View = styled(position, convertView, true)
             }
             view.setPopupBackgroundDrawable(gradient(intArrayOf(Color.rgb(65, 46, 31), Color.rgb(29, 23, 19)), 10, Color.rgb(255, 207, 104)))
-            view.minimumHeight = (54 * resources.displayMetrics.density).toInt()
+            view.minimumHeight = (72 * resources.displayMetrics.density).toInt()
             view.setPadding(0, 0, 0, 0)
             view.setSelection(items.indexOf(selected).takeIf { it >= 0 } ?: 0)
             return view
@@ -318,11 +318,11 @@ class MainActivity : Activity() {
         val custom = EditText(this).apply {
             hint = "Custom unit name (optional)"
             setText(if (unitValue !in units) unitValue else "")
-            setTextColor(Color.WHITE); setHintTextColor(muted); textSize = 11f
+            setTextColor(Color.WHITE); setHintTextColor(muted); textSize = 16f
             gravity = Gravity.CENTER_VERTICAL
             includeFontPadding = true
             setSingleLine(true)
-            setPadding(12, 10, 12, 10)
+            setPadding(16, 14, 16, 14)
             background = gradient(intArrayOf(Color.rgb(35, 27, 22), Color.rgb(35, 27, 22)), 8, Color.rgb(151, 105, 59))
             visibility = if (unitValue == "Custom unit" || unitValue !in units) View.VISIBLE else View.GONE
         }
@@ -333,7 +333,7 @@ class MainActivity : Activity() {
                 "Witch Doctor" -> "❖"
                 else -> "★"
             }
-            textSize = 15f
+            textSize = 25f
             gravity = Gravity.CENTER
             typeface = Typeface.create("sans-serif-black", Typeface.BOLD)
             setTextColor(Color.rgb(255, 220, 135))
@@ -352,32 +352,32 @@ class MainActivity : Activity() {
             }
         }
         rowCard.addView(TextView(this).apply {
-            text = "TARGET WAVE"; setTextColor(cyan); textSize = 10f; typeface = Typeface.DEFAULT_BOLD
+            text = "TARGET WAVE"; setTextColor(cyan); textSize = 13f; typeface = Typeface.DEFAULT_BOLD
         })
-        rowCard.addView(wave, LinearLayout.LayoutParams(-1, 56))
+        rowCard.addView(wave, LinearLayout.LayoutParams(-1, 72))
         rowCard.addView(TextView(this).apply {
-            text = "UNIT"; setTextColor(muted); textSize = 10f
+            text = "UNIT"; setTextColor(muted); textSize = 13f
         })
         val unitPicker = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
         }
-        unitPicker.addView(unitPortrait, LinearLayout.LayoutParams((54 * resources.displayMetrics.density).toInt(), (54 * resources.displayMetrics.density).toInt()).apply { rightMargin = (8 * resources.displayMetrics.density).toInt() })
-        unitPicker.addView(unit, LinearLayout.LayoutParams(0, 56, 1f))
-        rowCard.addView(unitPicker, LinearLayout.LayoutParams(-1, 58))
-        rowCard.addView(custom, LinearLayout.LayoutParams(-1, 50))
+        unitPicker.addView(unitPortrait, LinearLayout.LayoutParams((72 * resources.displayMetrics.density).toInt(), (72 * resources.displayMetrics.density).toInt()).apply { rightMargin = (8 * resources.displayMetrics.density).toInt() })
+        unitPicker.addView(unit, LinearLayout.LayoutParams(0, 72, 1f))
+        rowCard.addView(unitPicker, LinearLayout.LayoutParams(-1, 76))
+        rowCard.addView(custom, LinearLayout.LayoutParams(-1, 64))
         rowCard.addView(TextView(this).apply {
-            text = "ACTION"; setTextColor(muted); textSize = 10f
+            text = "ACTION"; setTextColor(muted); textSize = 13f
         })
-        rowCard.addView(action, LinearLayout.LayoutParams(-1, 56))
+        rowCard.addView(action, LinearLayout.LayoutParams(-1, 72))
         rowCard.addView(TextView(this).apply {
-            text = "EARLY WARNING"; setTextColor(muted); textSize = 10f
+            text = "EARLY WARNING"; setTextColor(muted); textSize = 13f
         })
-        rowCard.addView(lead, LinearLayout.LayoutParams(-1, 56))
+        rowCard.addView(lead, LinearLayout.LayoutParams(-1, 72))
         rowCard.addView(actionButton("REMOVE ALERT", false) {
             reminderRows.removeAll { it.wave === wave }
             reminderList.removeView(rowCard)
-        }, LinearLayout.LayoutParams(-1, 46).apply { topMargin = 7 })
+        }, LinearLayout.LayoutParams(-1, 56).apply { topMargin = 10 })
         reminderRows.add(ReminderRow(wave, unit, action, lead, custom))
         reminderList.addView(rowCard, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = 9 })
     }
