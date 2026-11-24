@@ -30,10 +30,10 @@ class MainActivity : Activity() {
     private lateinit var vibration: CheckBox
     private lateinit var soundStyle: Spinner
 
-    private val bg = Color.rgb(10, 17, 30)
-    private val panel = Color.rgb(24, 36, 53)
-    private val cyan = Color.rgb(255, 199, 91)
-    private val muted = Color.rgb(170, 194, 214)
+    private val bg = Color.rgb(15, 19, 42)
+    private val panel = Color.rgb(35, 31, 65)
+    private val cyan = Color.rgb(255, 207, 104)
+    private val muted = Color.rgb(193, 190, 224)
     private data class ReminderRow(val wave: Spinner, val unit: Spinner, val action: Spinner, val lead: Spinner, val custom: EditText)
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -41,13 +41,13 @@ class MainActivity : Activity() {
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(18, 18, 18, 28)
-            background = gradient(intArrayOf(bg, Color.rgb(39, 54, 34)), 0)
+            background = gradient(intArrayOf(Color.rgb(20, 22, 52), Color.rgb(35, 38, 79)), 0)
         }
 
         val hero = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(20, 22, 20, 20)
-            background = gradient(intArrayOf(Color.rgb(15, 37, 57), Color.rgb(22, 48, 58)), 22, Color.rgb(255, 199, 91))
+            background = gradient(intArrayOf(Color.rgb(53, 32, 91), Color.rgb(24, 56, 91)), 22, Color.rgb(255, 207, 104))
         }
         hero.addView(CoopArtView(this, "banner"), LinearLayout.LayoutParams(-1, 150).apply { bottomMargin = 10 })
         hero.addView(TextView(this).apply {
@@ -178,7 +178,7 @@ class MainActivity : Activity() {
     private fun card() = LinearLayout(this).apply {
         orientation = LinearLayout.VERTICAL
         setPadding(15, 14, 15, 14)
-        background = gradient(intArrayOf(panel, Color.rgb(16, 25, 40)), 18, Color.rgb(67, 127, 151))
+        background = gradient(intArrayOf(panel, Color.rgb(22, 25, 52)), 18, Color.rgb(133, 101, 207))
     }
 
     private fun sectionTitle(textValue: String) = TextView(this).apply {
@@ -207,7 +207,7 @@ class MainActivity : Activity() {
         textSize = 13f
         setTextColor(Color.WHITE)
         setPadding(12, 5, 12, 5)
-        background = gradient(intArrayOf(Color.rgb(38, 29, 20), Color.rgb(38, 29, 20)), 10, Color.rgb(153, 111, 62))
+        background = gradient(intArrayOf(Color.rgb(27, 34, 65), Color.rgb(27, 34, 65)), 10, Color.rgb(94, 153, 220))
     }
 
     private fun actionButton(label: String, primary: Boolean, action: () -> Unit) = TextView(this).apply {
@@ -280,7 +280,7 @@ class MainActivity : Activity() {
         val rowCard = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(10, 9, 10, 10)
-            background = gradient(intArrayOf(Color.rgb(45, 34, 23), Color.rgb(36, 28, 20)), 12, Color.rgb(153, 111, 62))
+            background = gradient(intArrayOf(Color.rgb(44, 35, 77), Color.rgb(27, 28, 59)), 12, Color.rgb(139, 105, 215))
         }
         fun spinner(items: List<String>, selected: String): Spinner {
             val view = Spinner(this)
@@ -293,15 +293,15 @@ class MainActivity : Activity() {
                     label.gravity = Gravity.CENTER_VERTICAL
                     label.setPadding(12, 8, 12, 8)
                     label.background = gradient(intArrayOf(
-                        if (dropdown) Color.rgb(86, 62, 38) else Color.rgb(43, 33, 23),
-                        if (dropdown) Color.rgb(61, 45, 29) else Color.rgb(43, 33, 23)
-                    ), 6, Color.rgb(153, 111, 62))
+                        if (dropdown) Color.rgb(61, 49, 104) else Color.rgb(32, 34, 70),
+                        if (dropdown) Color.rgb(43, 39, 83) else Color.rgb(32, 34, 70)
+                    ), 6, Color.rgb(107, 91, 171))
                     return label
                 }
                 override fun getView(position: Int, convertView: View?, parent: ViewGroup): View = styled(position, convertView, false)
                 override fun getDropDownView(position: Int, convertView: View?, parent: ViewGroup): View = styled(position, convertView, true)
             }
-            view.setPopupBackgroundDrawable(gradient(intArrayOf(Color.rgb(76, 55, 34), Color.rgb(39, 29, 20)), 10, Color.rgb(218, 164, 82)))
+            view.setPopupBackgroundDrawable(gradient(intArrayOf(Color.rgb(48, 39, 91), Color.rgb(25, 26, 59)), 10, Color.rgb(255, 207, 104)))
             view.minimumHeight = (54 * resources.displayMetrics.density).toInt()
             view.setPadding(0, 0, 0, 0)
             view.setSelection(items.indexOf(selected).takeIf { it >= 0 } ?: 0)
@@ -327,7 +327,7 @@ class MainActivity : Activity() {
             includeFontPadding = true
             setSingleLine(true)
             setPadding(12, 10, 12, 10)
-            background = gradient(intArrayOf(Color.rgb(42, 32, 23), Color.rgb(42, 32, 23)), 8, Color.rgb(142, 103, 59))
+            background = gradient(intArrayOf(Color.rgb(28, 34, 67), Color.rgb(28, 34, 67)), 8, Color.rgb(101, 143, 208))
             visibility = if (unitValue == "Custom unit" || unitValue !in units) View.VISIBLE else View.GONE
         }
         val unitPortrait = CoopArtView(this, unitValue)
