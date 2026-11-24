@@ -30,10 +30,10 @@ class MainActivity : Activity() {
     private lateinit var vibration: CheckBox
     private lateinit var soundStyle: Spinner
 
-    private val bg = Color.rgb(15, 19, 42)
-    private val panel = Color.rgb(35, 31, 65)
-    private val cyan = Color.rgb(255, 207, 104)
-    private val muted = Color.rgb(193, 190, 224)
+    private val bg = Color.rgb(25, 27, 21)
+    private val panel = Color.rgb(54, 56, 42)
+    private val cyan = Color.rgb(244, 190, 76)
+    private val muted = Color.rgb(196, 190, 160)
     private data class ReminderRow(val wave: Spinner, val unit: Spinner, val action: Spinner, val lead: Spinner, val custom: EditText)
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -41,35 +41,31 @@ class MainActivity : Activity() {
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(18, 18, 18, 28)
-            background = gradient(intArrayOf(Color.rgb(20, 22, 52), Color.rgb(35, 38, 79)), 0)
+            background = gradient(intArrayOf(Color.rgb(30, 32, 24), Color.rgb(20, 22, 18)), 0)
         }
 
         val hero = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(20, 22, 20, 20)
-            background = gradient(intArrayOf(Color.rgb(53, 32, 91), Color.rgb(24, 56, 91)), 22, Color.rgb(255, 207, 104))
+            setPadding(18, 17, 18, 17)
+            background = gradient(intArrayOf(Color.rgb(76, 68, 43), Color.rgb(43, 45, 32)), 8, Color.rgb(210, 164, 69))
         }
-        hero.addView(CoopArtView(this, "banner"), LinearLayout.LayoutParams(-1, 150).apply { bottomMargin = 10 })
         hero.addView(TextView(this).apply {
-            text = "COOP TD  /  WALL COMPANION"
-            textSize = 12f
-            letterSpacing = 0.16f
-            setTextColor(cyan)
+            text = "COOP TD"
+            textSize = 27f
+            letterSpacing = 0.06f
+            setTextColor(Color.rgb(255, 221, 143))
+            typeface = Typeface.create("sans-serif-black", Typeface.BOLD)
+            setShadowLayer(2f, 1f, 2f, Color.rgb(35, 25, 12))
+        })
+        hero.addView(TextView(this).apply {
+            text = "WALL ASSISTANT  •  WAVE CONTROL"
+            textSize = 11f
+            letterSpacing = 0.10f
+            setTextColor(Color.rgb(224, 211, 169))
             typeface = Typeface.DEFAULT_BOLD
+            setPadding(1, 5, 1, 0)
         })
-        hero.addView(TextView(this).apply {
-            text = "DEFEND THE WAVES."
-            textSize = 29f
-            setTextColor(Color.WHITE)
-            typeface = Typeface.create("sans-serif-black", Typeface.NORMAL)
-            setPadding(0, 9, 0, 2)
-        })
-        hero.addView(TextView(this).apply {
-            text = "Battle timer  •  unit alerts  •  live wave sync"
-            textSize = 13f
-            setTextColor(muted)
-        })
-        root.addView(hero, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = 18 })
+        root.addView(hero, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = 16 })
 
         root.addView(sectionTitle("WAVE TIMING"))
         val timingCard = card()
@@ -178,7 +174,7 @@ class MainActivity : Activity() {
     private fun card() = LinearLayout(this).apply {
         orientation = LinearLayout.VERTICAL
         setPadding(15, 14, 15, 14)
-        background = gradient(intArrayOf(panel, Color.rgb(22, 25, 52)), 18, Color.rgb(133, 101, 207))
+        background = gradient(intArrayOf(Color.rgb(62, 63, 47), Color.rgb(42, 45, 34)), 9, Color.rgb(171, 139, 74))
     }
 
     private fun sectionTitle(textValue: String) = TextView(this).apply {
@@ -220,9 +216,9 @@ class MainActivity : Activity() {
         includeFontPadding = true
         minHeight = 0
         setPadding(10, 6, 10, 6)
-        setTextColor(if (primary) Color.rgb(39, 24, 58) else Color.rgb(239, 233, 255))
-        background = if (primary) gradient(intArrayOf(Color.rgb(255, 211, 105), Color.rgb(255, 133, 66)), 14, Color.rgb(255, 229, 160))
-            else gradient(intArrayOf(Color.rgb(78, 48, 117), Color.rgb(43, 42, 91)), 14, Color.rgb(143, 112, 220))
+        setTextColor(if (primary) Color.rgb(47, 35, 17) else Color.rgb(244, 231, 190))
+        background = if (primary) gradient(intArrayOf(Color.rgb(250, 205, 103), Color.rgb(202, 139, 48)), 7, Color.rgb(255, 225, 148))
+            else gradient(intArrayOf(Color.rgb(91, 91, 63), Color.rgb(57, 61, 43)), 7, Color.rgb(163, 139, 82))
         isClickable = true
         isFocusable = true
         setOnClickListener { action() }
@@ -245,16 +241,16 @@ class MainActivity : Activity() {
                     label.ellipsize = android.text.TextUtils.TruncateAt.END
                     label.setPadding(14, 8, 14, 8)
                     label.layoutParams = ViewGroup.LayoutParams(-1, -1)
-                    label.background = gradient(intArrayOf(Color.rgb(42, 37, 83), Color.rgb(25, 30, 65)), 6, Color.rgb(118, 94, 190))
+                    label.background = gradient(intArrayOf(Color.rgb(66, 65, 47), Color.rgb(42, 45, 34)), 6, Color.rgb(118, 94, 190))
                     return label
                 }
                 override fun getView(position: Int, convertView: View?, parent: ViewGroup): View = styled(position, convertView, false)
                 override fun getDropDownView(position: Int, convertView: View?, parent: ViewGroup): View = styled(position, convertView, true)
             }
-            background = gradient(intArrayOf(Color.rgb(39, 37, 82), Color.rgb(23, 27, 60)), 10, cyan)
+            background = gradient(intArrayOf(Color.rgb(67, 66, 47), Color.rgb(39, 42, 31)), 10, cyan)
             minimumHeight = (52 * resources.displayMetrics.density).toInt()
             setPadding(8, 0, 8, 0)
-            setPopupBackgroundDrawable(gradient(intArrayOf(Color.rgb(40, 33, 82), Color.rgb(20, 23, 55)), 10, cyan))
+            setPopupBackgroundDrawable(gradient(intArrayOf(Color.rgb(63, 61, 43), Color.rgb(31, 34, 26)), 10, cyan))
             dropDownVerticalOffset = (4 * resources.displayMetrics.density).toInt()
             setSelection(options.indexOf(prefs.getString("sound_style", "Alarm")).takeIf { it >= 0 } ?: 1)
         }
@@ -280,7 +276,7 @@ class MainActivity : Activity() {
         val rowCard = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(10, 9, 10, 10)
-            background = gradient(intArrayOf(Color.rgb(44, 35, 77), Color.rgb(27, 28, 59)), 12, Color.rgb(139, 105, 215))
+            background = gradient(intArrayOf(Color.rgb(68, 67, 49), Color.rgb(45, 47, 35)), 7, Color.rgb(179, 146, 79))
         }
         fun spinner(items: List<String>, selected: String): Spinner {
             val view = Spinner(this)
@@ -293,15 +289,15 @@ class MainActivity : Activity() {
                     label.gravity = Gravity.CENTER_VERTICAL
                     label.setPadding(12, 8, 12, 8)
                     label.background = gradient(intArrayOf(
-                        if (dropdown) Color.rgb(61, 49, 104) else Color.rgb(32, 34, 70),
-                        if (dropdown) Color.rgb(43, 39, 83) else Color.rgb(32, 34, 70)
-                    ), 6, Color.rgb(107, 91, 171))
+                        if (dropdown) Color.rgb(91, 83, 55) else Color.rgb(39, 43, 32),
+                        if (dropdown) Color.rgb(62, 62, 44) else Color.rgb(39, 43, 32)
+                    ), 6, Color.rgb(139, 120, 75))
                     return label
                 }
                 override fun getView(position: Int, convertView: View?, parent: ViewGroup): View = styled(position, convertView, false)
                 override fun getDropDownView(position: Int, convertView: View?, parent: ViewGroup): View = styled(position, convertView, true)
             }
-            view.setPopupBackgroundDrawable(gradient(intArrayOf(Color.rgb(48, 39, 91), Color.rgb(25, 26, 59)), 10, Color.rgb(255, 207, 104)))
+            view.setPopupBackgroundDrawable(gradient(intArrayOf(Color.rgb(66, 63, 43), Color.rgb(32, 35, 26)), 10, Color.rgb(255, 207, 104)))
             view.minimumHeight = (54 * resources.displayMetrics.density).toInt()
             view.setPadding(0, 0, 0, 0)
             view.setSelection(items.indexOf(selected).takeIf { it >= 0 } ?: 0)
@@ -327,16 +323,32 @@ class MainActivity : Activity() {
             includeFontPadding = true
             setSingleLine(true)
             setPadding(12, 10, 12, 10)
-            background = gradient(intArrayOf(Color.rgb(28, 34, 67), Color.rgb(28, 34, 67)), 8, Color.rgb(101, 143, 208))
+            background = gradient(intArrayOf(Color.rgb(35, 39, 29), Color.rgb(35, 39, 29)), 8, Color.rgb(140, 124, 81))
             visibility = if (unitValue == "Custom unit" || unitValue !in units) View.VISIBLE else View.GONE
         }
-        val unitPortrait = CoopArtView(this, unitValue)
+        val unitPortrait = TextView(this).apply {
+            text = when (unitValue) {
+                "Blue Dragon" -> "DR"
+                "Ivy Whisper" -> "IV"
+                "Witch Doctor" -> "WD"
+                else -> "★"
+            }
+            textSize = 15f
+            gravity = Gravity.CENTER
+            typeface = Typeface.create("sans-serif-black", Typeface.BOLD)
+            setTextColor(Color.rgb(255, 220, 135))
+            background = gradient(intArrayOf(Color.rgb(91, 79, 49), Color.rgb(48, 50, 37)), 6, Color.rgb(208, 165, 77))
+        }
         unit.onItemSelectedListener = object : android.widget.AdapterView.OnItemSelectedListener {
             override fun onNothingSelected(parent: android.widget.AdapterView<*>?) {}
             override fun onItemSelected(parent: android.widget.AdapterView<*>?, view: View?, position: Int, id: Long) {
                 custom.visibility = if (units[position] == "Custom unit") View.VISIBLE else View.GONE
-                unitPortrait.artType = units[position]
-                unitPortrait.invalidate()
+                unitPortrait.text = when (units[position]) {
+                    "Blue Dragon" -> "DR"
+                    "Ivy Whisper" -> "IV"
+                    "Witch Doctor" -> "WD"
+                    else -> "★"
+                }
             }
         }
         rowCard.addView(TextView(this).apply {
