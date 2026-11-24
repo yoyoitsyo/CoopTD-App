@@ -220,9 +220,9 @@ class MainActivity : Activity() {
         includeFontPadding = true
         minHeight = 0
         setPadding(10, 6, 10, 6)
-        setTextColor(if (primary) Color.rgb(43, 29, 13) else Color.rgb(255, 239, 210))
-        background = if (primary) gradient(intArrayOf(Color.rgb(255, 205, 105), Color.rgb(190, 119, 43)), 14, Color.rgb(255, 224, 148))
-            else gradient(intArrayOf(Color.rgb(91, 66, 40), Color.rgb(57, 43, 29)), 14, Color.rgb(160, 116, 62))
+        setTextColor(if (primary) Color.rgb(39, 24, 58) else Color.rgb(239, 233, 255))
+        background = if (primary) gradient(intArrayOf(Color.rgb(255, 211, 105), Color.rgb(255, 133, 66)), 14, Color.rgb(255, 229, 160))
+            else gradient(intArrayOf(Color.rgb(78, 48, 117), Color.rgb(43, 42, 91)), 14, Color.rgb(143, 112, 220))
         isClickable = true
         isFocusable = true
         setOnClickListener { action() }
@@ -245,16 +245,16 @@ class MainActivity : Activity() {
                     label.ellipsize = android.text.TextUtils.TruncateAt.END
                     label.setPadding(14, 8, 14, 8)
                     label.layoutParams = ViewGroup.LayoutParams(-1, -1)
-                    label.background = gradient(intArrayOf(Color.rgb(20, 39, 59), Color.rgb(12, 24, 40)), 6, Color.rgb(48, 92, 120))
+                    label.background = gradient(intArrayOf(Color.rgb(42, 37, 83), Color.rgb(25, 30, 65)), 6, Color.rgb(118, 94, 190))
                     return label
                 }
                 override fun getView(position: Int, convertView: View?, parent: ViewGroup): View = styled(position, convertView, false)
                 override fun getDropDownView(position: Int, convertView: View?, parent: ViewGroup): View = styled(position, convertView, true)
             }
-            background = gradient(intArrayOf(Color.rgb(20, 42, 62), Color.rgb(12, 25, 42)), 10, cyan)
+            background = gradient(intArrayOf(Color.rgb(39, 37, 82), Color.rgb(23, 27, 60)), 10, cyan)
             minimumHeight = (52 * resources.displayMetrics.density).toInt()
             setPadding(8, 0, 8, 0)
-            setPopupBackgroundDrawable(gradient(intArrayOf(Color.rgb(17, 32, 50), Color.rgb(10, 20, 34)), 10, cyan))
+            setPopupBackgroundDrawable(gradient(intArrayOf(Color.rgb(40, 33, 82), Color.rgb(20, 23, 55)), 10, cyan))
             dropDownVerticalOffset = (4 * resources.displayMetrics.density).toInt()
             setSelection(options.indexOf(prefs.getString("sound_style", "Alarm")).takeIf { it >= 0 } ?: 1)
         }
