@@ -87,7 +87,7 @@ class CoopTDHudView(
         canvas.restoreToCount(save)
     }
     private fun drawReferenceHud(c: Canvas, art: Bitmap) {
-        val imagePaint=p(Color.WHITE).apply { isFilterBitmap=true; filterBitmap=true }
+        val imagePaint=p(Color.WHITE).apply { isFilterBitmap=true }
         ReferenceArt.drawCrop(c,art,RectF(610f,78f,1183f,460f),RectF(0f,0f,360f,250f),imagePaint)
         // Hide the static sample wave/time/status printed in the design and redraw live values.
         rr(c,126f,37f,306f,94f,9f,Color.rgb(9,15,34),Color.rgb(255,198,65),2f)
@@ -107,7 +107,7 @@ class CoopTDHudView(
         val xs=listOf(118f,166f,214f,262f)
         labels.forEachIndexed { i,label ->
             rr(c,xs[i],207f,xs[i]+43f,239f,6f,Color.rgb(20,52,112),Color.rgb(255,196,65),1.4f)
-            txt(c,if(i==1&&paused)"GO" else label,xs[i]+21.5f,228f,if(i==1)8.5f else 17f,Color.WHITE,true,true)
+            txt(c,if(i==1&&paused)"GO" else label,xs[i]+21.5f,228f,if(i==1)8.5f else 17f,Color.WHITE,true)
         }
     }
 
