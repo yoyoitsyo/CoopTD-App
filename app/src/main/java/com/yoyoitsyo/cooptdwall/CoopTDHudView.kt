@@ -18,6 +18,7 @@ class CoopTDHudView(
     var statusLabel = "MANUAL TIMER"
     var paused = false
     private val density = resources.displayMetrics.density
+    private var referenceArt: Bitmap? = ReferenceArt.load(context)
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val path = Path()
     private var downX = 0f
@@ -46,6 +47,11 @@ class CoopTDHudView(
         super.onDraw(canvas)
         val save=canvas.save()
         canvas.scale(width/360f,height/250f)
+        referenceArt?.let { art ->
+            drawReferenceHud(canvas, art)
+            canvas.restoreToCount(save)
+            return
+        }
         // Outer black/gold game frame with layered beveled edge.
         rr(canvas,1f,1f,359f,249f,18f,Color.rgb(7,10,22),Color.rgb(255,194,58),4f)
         rr(canvas,7f,7f,353f,243f,14f,Color.rgb(16,25,54),Color.rgb(91,112,181),2f)
@@ -80,6 +86,31 @@ class CoopTDHudView(
         }
         canvas.restoreToCount(save)
     }
+    private fun drawReferenceHud(c: Canvas, art: Bitmap) {
+        val imagePaint=p(Color.WHITE).apply { isFilterBitmap=true; filterBitmap=true }
+        ReferenceArt.drawCrop(c,art,RectF(610f,78f,1183f,460f),RectF(0f,0f,360f,250f),imagePaint)
+        // Hide the static sample wave/time/status printed in the design and redraw live values.
+        rr(c,126f,37f,306f,94f,9f,Color.rgb(9,15,34),Color.rgb(255,198,65),2f)
+        txt(c,waveLabel,216f,82f,27f,Color.WHITE,true)
+        rr(c,163f,96f,306f,159f,8f,Color.rgb(9,15,34),Color.rgb(255,198,65),1.5f)
+        txt(c,"GAME TIMER",234f,116f,13f,Color.WHITE,true)
+        val liveTime=timerLabel.substringAfter("GAME TIMER").trim()
+        txt(c,liveTime,234f,149f,28f,Color.rgb(255,211,36),true)
+        val locked=statusLabel.contains("OCR",true)||statusLabel.contains("SYNC",true)
+        rr(c,38f,161f,325f,198f,9f,
+            if(locked)Color.rgb(7,98,31) else Color.rgb(18,37,79),
+            if(locked)Color.rgb(103,255,103) else Color.rgb(255,197,67),2f)
+        c.drawCircle(53f,179f,5f,p(if(locked)Color.rgb(52,255,77) else Color.rgb(255,198,58)))
+        txt(c,statusLabel.take(27),64f,184f,9.5f,Color.WHITE,true)
+        // Compact controls replace the static logo strip while preserving wave corrections.
+        val labels=listOf("−","PAUSE","+","SIZE")
+        val xs=listOf(118f,166f,214f,262f)
+        labels.forEachIndexed { i,label ->
+            rr(c,xs[i],207f,xs[i]+43f,239f,6f,Color.rgb(20,52,112),Color.rgb(255,196,65),1.4f)
+            txt(c,if(i==1&&paused)"GO" else label,xs[i]+21.5f,228f,if(i==1)8.5f else 17f,Color.WHITE,true,true)
+        }
+    }
+
     private fun drawKnight(c:Canvas,x:Float,y:Float) {
         val save=c.save();c.translate(x,y)
         // Blue plume and steel helmet silhouette.
@@ -99,7 +130,7 @@ class CoopTDHudView(
     override fun onTouchEvent(e: MotionEvent): Boolean {
         val x=e.x/(width/360f); val y=e.y/(height/250f)
         when(e.action) {
-            MotionEvent.ACTION_DOWN -> { downX=e.rawX;downY=e.rawY;dragging=y<60f;moved=false;return true }
+            MotionEvent.ACTION_DOWN -> { downX=e.rawX;downY=e.rawY;dragging=y<60f||(x>305f&&y>200f);moved=false;return true }
             MotionEvent.ACTION_MOVE -> if(dragging) {
                 val dx=e.rawX-downX;val dy=e.rawY-downY
                 if(kotlin.math.abs(dx)>2||kotlin.math.abs(dy)>2)moved=true
@@ -109,10 +140,11 @@ class CoopTDHudView(
                 if(dragging){dragEnd();dragging=false}
                 if(!moved) when {
                     x>310f&&y<55f -> action("close")
-                    y>=216f&&x<95f -> action("wave-minus")
-                    y>=216f&&x<180f -> action("pause")
-                    y>=216f&&x<265f -> action("wave-plus")
-                    y>=216f -> action("size")
+                    y>=200f&&x>305f -> action("size")
+                    y>=200f&&x<162f -> action("wave-minus")
+                    y>=200f&&x<210f -> action("pause")
+                    y>=200f&&x<258f -> action("wave-plus")
+                    y>=200f -> action("size")
                     else -> action("pause")
                 }
                 performClick();return true
