@@ -40,6 +40,7 @@ class OverlayService : Service() {
     private val handler = Handler(Looper.getMainLooper())
     private lateinit var windowManager: WindowManager
     private var overlay: View? = null
+    private var hudView: CoopTDHudView? = null
     private var windowParams: WindowManager.LayoutParams? = null
     private var wave = 0
     private var waveStartedAt = 0L
@@ -170,190 +171,61 @@ class OverlayService : Service() {
     }
 
     private fun createOverlay() {
-        val box = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(13, 10, 13, 10)
-            background = GradientDrawable(
-                GradientDrawable.Orientation.TL_BR,
-                intArrayOf(Color.rgb(27, 39, 78), Color.rgb(8, 13, 29))
-            ).apply {
-                cornerRadius = 18f * resources.displayMetrics.density
-                setStroke((2f * resources.displayMetrics.density).toInt(), Color.rgb(255, 199, 70))
-            }
-            alpha = opacity
-            elevation = 12f * resources.displayMetrics.density
-        }
-        val header = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
-        val title = TextView(this).apply {
-            text = "COOP TD  •  WALL ASSISTANT"
-            textSize = 12f
-            letterSpacing = 0.06f
-            setTextColor(Color.rgb(255, 211, 75))
-            setTypeface(null, android.graphics.Typeface.BOLD)
-            setPadding(2, 5, 8, 5)
-        }
-        val close = TextView(this).apply {
-            text = "×"
-            textSize = 22f
-            gravity = Gravity.CENTER
-            setTextColor(Color.WHITE)
-            background = GradientDrawable().apply {
-                setColor(Color.rgb(150, 30, 43))
-                cornerRadius = 8f * resources.displayMetrics.density
-                setStroke((2f * resources.displayMetrics.density).toInt(), Color.rgb(255, 196, 76))
-            }
-            contentDescription = "Close floating timer"
-            isClickable = true
-            isFocusable = true
-            setOnClickListener { closeOverlay() }
-            setOnTouchListener { _, event ->
-                when (event.action) {
-                    MotionEvent.ACTION_DOWN -> true
-                    MotionEvent.ACTION_UP -> { closeOverlay(); true }
-                    MotionEvent.ACTION_CANCEL -> true
-                    else -> true
-                }
-            }
-        }
-        header.addView(CoopArtView(this, "badge"), LinearLayout.LayoutParams((44 * resources.displayMetrics.density).toInt(), (42 * resources.displayMetrics.density).toInt()))
-        header.addView(title, LinearLayout.LayoutParams(0, 40, 1f))
-        header.addView(close, LinearLayout.LayoutParams(
-            (44 * resources.displayMetrics.density).toInt(),
-            (44 * resources.displayMetrics.density).toInt()
-        ))
-        waveText = TextView(this).apply {
-            textSize = 27f
-            maxLines = 1
-            includeFontPadding = false
-            setAutoSizeTextTypeUniformWithConfiguration(18, 27, 1, android.util.TypedValue.COMPLEX_UNIT_SP)
-            setTextColor(Color.WHITE)
-            setTypeface(android.graphics.Typeface.create("sans-serif-black", android.graphics.Typeface.NORMAL))
-            setPadding(10, 8, 10, 5)
-            background = GradientDrawable(
-                GradientDrawable.Orientation.LEFT_RIGHT,
-                intArrayOf(Color.rgb(41, 91, 177), Color.rgb(18, 36, 91))
-            ).apply {
-                cornerRadius = 11f * resources.displayMetrics.density
-                setStroke((2f * resources.displayMetrics.density).toInt(), Color.rgb(255, 199, 70))
-            }
-        }
-        countdownText = TextView(this).apply {
-            textSize = 22f
-            maxLines = 1
-            includeFontPadding = false
-            setAutoSizeTextTypeUniformWithConfiguration(14, 22, 1, android.util.TypedValue.COMPLEX_UNIT_SP)
-            setTextColor(Color.rgb(255, 211, 45))
-            setTypeface(null, android.graphics.Typeface.BOLD)
-            setPadding(2, 0, 2, 4)
-        }
-        nextText = TextView(this).apply {
-            textSize = 11f
-            setTextColor(Color.rgb(235, 245, 255))
-            setPadding(10, 7, 10, 8)
-            background = GradientDrawable().apply {
-                setColor(Color.rgb(17, 35, 70))
-                cornerRadius = 9f * resources.displayMetrics.density
-                setStroke((1.5f * resources.displayMetrics.density).toInt(), Color.rgb(255, 199, 70))
-            }
-        }
-
-        fun button(label: String, action: () -> Unit) = TextView(this).apply {
-            text = label
-            textSize = 11f
-            maxLines = 1
-            includeFontPadding = false
-            gravity = Gravity.CENTER
-            textAlignment = View.TEXT_ALIGNMENT_CENTER
-            setTextColor(Color.rgb(245, 248, 255))
-            typeface = android.graphics.Typeface.create("sans-serif-condensed", android.graphics.Typeface.BOLD)
-            background = GradientDrawable(
-                GradientDrawable.Orientation.TOP_BOTTOM,
-                intArrayOf(Color.rgb(37, 89, 174), Color.rgb(17, 38, 92))
-            ).apply {
-                cornerRadius = 9f * resources.displayMetrics.density
-                setStroke((1.5f * resources.displayMetrics.density).toInt(), Color.rgb(255, 199, 70))
-            }
-            setPadding(3, 0, 3, 0)
-            minWidth = 38
-            isClickable = true
-            isFocusable = true
-            setOnClickListener { action() }
-        }
-        val controls = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            setPadding(0, 5, 0, 4)
-        }
-        controls.addView(button("WAVE -1") { correctWave(-1) }, LinearLayout.LayoutParams(0, 42, 1.2f))
-        pauseButton = button("PAUSE") { togglePause() }
-        controls.addView(pauseButton, LinearLayout.LayoutParams(0, 42, 1.4f))
-        controls.addView(button("WAVE +1") { correctWave(1) }, LinearLayout.LayoutParams(0, 42, 1.2f))
-        val appearance = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            setPadding(0, 2, 0, 0)
-        }
-        appearance.addView(button("SMALLER") { changeScale(-0.1f) }, LinearLayout.LayoutParams(0, 38, 1.2f))
-        appearance.addView(button("LARGER") { changeScale(0.1f) }, LinearLayout.LayoutParams(0, 38, 1.2f))
-        appearance.addView(button("OPACITY") { changeOpacity() }, LinearLayout.LayoutParams(0, 38, 1.2f))
-
-        box.addView(header)
-        box.addView(waveText, LinearLayout.LayoutParams(-1, -2).apply { topMargin = 3; bottomMargin = 5 })
-        box.addView(countdownText)
-        box.addView(nextText)
-        box.addView(controls)
-        box.addView(appearance)
-
-        title.setOnTouchListener(object : View.OnTouchListener {
-            var downX = 0f
-            var downY = 0f
-            var startX = 0
-            var startY = 0
-            override fun onTouch(v: View, event: MotionEvent): Boolean {
-                val lp = windowParams ?: return false
-                when (event.action) {
-                    MotionEvent.ACTION_DOWN -> {
-                        downX = event.rawX
-                        downY = event.rawY
-                        startX = lp.x
-                        startY = lp.y
-                        return true
-                    }
-                    MotionEvent.ACTION_MOVE -> {
-                        val metrics = resources.displayMetrics
-                        val maxX = (metrics.widthPixels - box.width).coerceAtLeast(0)
-                        val maxY = (metrics.heightPixels - box.height).coerceAtLeast(0)
-                        lp.x = (startX + (event.rawX - downX).toInt()).coerceIn(0, maxX)
-                        lp.y = (startY + (event.rawY - downY).toInt()).coerceIn(0, maxY)
-                        try { windowManager.updateViewLayout(box, lp) } catch (_: Exception) {}
-                        return true
-                    }
-                    MotionEvent.ACTION_UP -> {
-                        prefs.edit().putInt("overlay_x", lp.x).putInt("overlay_y", lp.y).apply()
-                        return true
-                    }
-                    MotionEvent.ACTION_CANCEL -> return true
-                }
-                return false
-            }
-        })
-
         val density = resources.displayMetrics.density
         val metrics = resources.displayMetrics
+        val hud = CoopTDHudView(
+            this,
+            action = { action ->
+                when (action) {
+                    "close" -> closeOverlay()
+                    "wave-minus" -> correctWave(-1)
+                    "pause" -> togglePause()
+                    "wave-plus" -> correctWave(1)
+                    "size" -> changeScale(if (scale > 1.35f) -0.15f else 0.15f)
+                }
+            },
+            drag = { dx, dy ->
+                val lp = windowParams
+                val view = overlay
+                if (lp != null && view != null) {
+                    val maxX = (metrics.widthPixels - view.width).coerceAtLeast(0)
+                    val maxY = (metrics.heightPixels - view.height).coerceAtLeast(0)
+                    lp.x = (lp.x + dx.toInt()).coerceIn(0, maxX)
+                    lp.y = (lp.y + dy.toInt()).coerceIn(0, maxY)
+                    try { windowManager.updateViewLayout(view, lp) } catch (_: Exception) {}
+                }
+            },
+            dragEnd = {
+                windowParams?.let { prefs.edit().putInt("overlay_x", it.x).putInt("overlay_y", it.y).apply() }
+            }
+        ).apply {
+            alpha = opacity
+            elevation = 14f * density
+            contentDescription = "CoopTD floating wave timer"
+        }
+        val width = (metrics.widthPixels - (16 * density).toInt()).coerceAtLeast((280 * density).toInt())
+        val height = (250 * density).toInt()
         val params = WindowManager.LayoutParams(
-            WindowManager.LayoutParams.WRAP_CONTENT,
-            WindowManager.LayoutParams.WRAP_CONTENT,
+            width,
+            height,
             if (Build.VERSION.SDK_INT >= 26) WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY else WindowManager.LayoutParams.TYPE_PHONE,
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
             PixelFormat.TRANSLUCENT
         ).apply {
             gravity = Gravity.TOP or Gravity.START
-            x = prefs.getInt("overlay_x", (12 * density).toInt()).coerceAtLeast(0)
-            y = prefs.getInt("overlay_y", (130 * density).toInt()).coerceAtLeast(0)
-            x = x.coerceAtMost((metrics.widthPixels - (280 * density).toInt()).coerceAtLeast(0))
-            y = y.coerceAtMost((metrics.heightPixels - (180 * density).toInt()).coerceAtLeast(0))
+            x = prefs.getInt("overlay_x", (8 * density).toInt()).coerceAtLeast(0)
+            y = prefs.getInt("overlay_y", (140 * density).toInt()).coerceAtLeast(0)
+            x = x.coerceAtMost((metrics.widthPixels - width).coerceAtLeast(0))
+            y = y.coerceAtMost((metrics.heightPixels - height).coerceAtLeast(0))
         }
         windowParams = params
-        windowManager.addView(box, params)
-        overlay = box
+        windowManager.addView(hud, params)
+        overlay = hud
+        hudView = hud
+        waveText = null
+        countdownText = null
+        nextText = null
+        pauseButton = null
         applyScale()
         refresh()
     }
@@ -362,28 +234,27 @@ class OverlayService : Service() {
         val elapsed = if (paused) durationForWave(wave) - remainingWhenPaused
             else SystemClock.elapsedRealtime() - waveStartedAt
         val remaining = (durationForWave(wave) - elapsed).coerceAtLeast(0L)
-        waveText?.text = "WAVE $wave"
         val syncedLeft = syncedRemainingMs?.let {
             (it - (SystemClock.elapsedRealtime() - syncedRemainingAt)).coerceAtLeast(0L)
         }
-        countdownText?.text = when {
-            autoSync && syncedLeft != null -> "GAME TIMER  " + formatTime(syncedLeft)
-            autoSync -> "GAME TIMER  ·  WAITING"
-            paused -> "PAUSED  ·  " + formatTime(remainingWhenPaused)
-            else -> "GAME TIMER  " + formatTime(remaining)
+        val timer = when {
+            autoSync && syncedLeft != null -> formatTime(syncedLeft)
+            autoSync -> "WAITING"
+            paused -> formatTime(remainingWhenPaused)
+            else -> formatTime(remaining)
         }
         val upcoming = reminders().filter { it.wave - it.lead > wave }.minByOrNull { it.wave - it.lead }
         val reminderLine = upcoming?.let {
             val triggerWave = it.wave - it.lead
             val prefix = if (it.lead > 0) "HEADS-UP" else "NEXT"
-            "$prefix: ${it.action} ${it.unit} · WAVE ${it.wave} (alert at $triggerWave)"
-        } ?: "No upcoming reminders"
-        nextText?.text = if (autoSync) "● OCR SYNC  ·  LOCKED ON WAVE\n$reminderLine" else reminderLine
-        nextText?.background = GradientDrawable().apply {
-            setColor(if (autoSync) Color.rgb(17, 104, 37) else Color.rgb(17, 35, 70))
-            cornerRadius = 9f * resources.displayMetrics.density
-            setStroke((1.5f * resources.displayMetrics.density).toInt(),
-                if (autoSync) Color.rgb(102, 255, 110) else Color.rgb(255, 199, 70))
+            "$prefix: ${it.unit} WAVE ${it.wave} (at ${triggerWave})"
+        } ?: "NO UPCOMING REMINDERS"
+        hudView?.apply {
+            waveLabel = "WAVE $wave"
+            timerLabel = "GAME TIMER  $timer"
+            statusLabel = if (autoSync) "OCR SYNC  ·  LOCKED ON WAVE" else reminderLine
+            paused = this@OverlayService.paused
+            invalidate()
         }
         if (Build.VERSION.SDK_INT >= 26) {
             val note = if (autoSync) "Wave $wave · OCR sync (manual timer off)" else "Wave $wave · " + formatTime(remaining)
@@ -396,6 +267,7 @@ class OverlayService : Service() {
         stopScreenCapture()
         overlay?.let { view -> try { windowManager.removeView(view) } catch (_: Exception) {} }
         overlay = null
+        hudView = null
         windowParams = null
         if (Build.VERSION.SDK_INT >= 24) stopForeground(STOP_FOREGROUND_REMOVE)
         else stopForeground(true)
