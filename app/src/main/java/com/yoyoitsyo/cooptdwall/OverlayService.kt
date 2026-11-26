@@ -284,11 +284,13 @@ class OverlayService : Service() {
             val height = metrics.heightPixels
             captureWidth = width
             captureHeight = height
-            imageReader = ImageReader.newInstance(width, height, android.graphics.PixelFormat.RGBA_8888, 2)
+            val scanWidth = (width * 0.75f).toInt().coerceAtLeast(1)
+            val scanHeight = (height * 0.75f).toInt().coerceAtLeast(1)
+            imageReader = ImageReader.newInstance(scanWidth, scanHeight, android.graphics.PixelFormat.RGBA_8888, 3)
             imageReader?.setOnImageAvailableListener({ reader ->
                 val image = try { reader.acquireLatestImage() } catch (_: Exception) { null } ?: return@setOnImageAvailableListener
                 val now = SystemClock.elapsedRealtime()
-                if (!autoSync || scanInFlight || now - lastScanAt < 350L) {
+                if (!autoSync || scanInFlight || now - lastScanAt < 180L) {
                     image.close()
                     return@setOnImageAvailableListener
                 }
@@ -337,19 +339,11 @@ class OverlayService : Service() {
                                     // Fire reminders from the game-confirmed wave, not the local timer.
                                     checkReminder()
                                 }
+                                // OCR owns the displayed clock while auto-sync is active.
+                                // Never write OCR samples back into the manual timer's clock.
                                 if (gameRemaining != null) {
                                     syncedRemainingMs = gameRemaining
                                     syncedRemainingAt = nowSync
-                                    val duration = durationForWave(wave)
-                                    val remaining = gameRemaining.coerceIn(0L, duration)
-                                    val currentRemaining = (duration - (nowSync - waveStartedAt)).coerceAtLeast(0L)
-                                    if (waveChanged || kotlin.math.abs(currentRemaining - remaining) > 1200L) {
-                                        waveStartedAt = nowSync - (duration - remaining)
-                                        remainingWhenPaused = remaining
-                                    }
-                                } else if (waveChanged) {
-                                    waveStartedAt = nowSync
-                                    remainingWhenPaused = durationForWave(wave)
                                 }
                                 if (waveChanged || gameRemaining != null) {
                                     nextText?.text = if (gameRemaining != null)
@@ -368,7 +362,7 @@ class OverlayService : Service() {
                     }
             }, handler)
             virtualDisplay = projection.createVirtualDisplay(
-                "CoopTDWaveScan", width, height, metrics.densityDpi,
+                "CoopTDWaveScan", scanWidth, scanHeight, metrics.densityDpi,
                 DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR,
                 imageReader?.surface, null, handler
             )
@@ -609,13 +603,20 @@ class OverlayService : Service() {
         imageReader = null
         try { mediaProjection?.stop() } catch (_: Exception) {}
         mediaProjection = null
-        autoSync = false
         if (wasAutoSync) {
-            waveStartedAt = SystemClock.elapsedRealtime()
-            remainingWhenPaused = durationForWave(wave)
+            // Hand off from OCR to manual mode at the last known game time,
+            // rather than restarting a fresh full wave and appearing to jump.
+            val now = SystemClock.elapsedRealtime()
+            val lastKnown = syncedRemainingMs?.let {
+                (it - (now - syncedRemainingAt)).coerceAtLeast(0L)
+            } ?: durationForWave(wave)
+            val duration = durationForWave(wave)
+            waveStartedAt = now - (duration - lastKnown.coerceAtMost(duration))
+            remainingWhenPaused = lastKnown.coerceAtMost(duration)
             paused = false
             pauseButton?.text = "PAUSE"
         }
+        autoSync = false
         scanInFlight = false
         pendingWave = -1
         pendingWaveCount = 0
@@ -627,6 +628,7 @@ class OverlayService : Service() {
     }
 
     private fun correctWave(delta: Int) {
+        if (autoSync) return // OCR is the sole authority while auto-sync is active.
         wave = (wave + delta).coerceAtLeast(0)
         waveStartedAt = SystemClock.elapsedRealtime()
         remainingWhenPaused = durationForWave(wave)
@@ -637,6 +639,7 @@ class OverlayService : Service() {
     }
 
     private fun togglePause() {
+        if (autoSync) return // Manual pause must not compete with the game clock.
         if (!paused) {
             val elapsed = (SystemClock.elapsedRealtime() - waveStartedAt).coerceAtLeast(0L)
             remainingWhenPaused = (durationForWave(wave) - elapsed).coerceAtLeast(0L)
