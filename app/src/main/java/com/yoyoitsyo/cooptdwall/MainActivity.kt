@@ -243,7 +243,7 @@ class MainActivity : Activity() {
                     label.ellipsize = android.text.TextUtils.TruncateAt.END
                     label.setPadding(14, 8, 14, 8)
                     label.layoutParams = ViewGroup.LayoutParams(-1, -1)
-                    label.background = gradient(intArrayOf(Color.rgb(73, 52, 35), Color.rgb(43, 32, 25)), 6, Color.rgb(151, 105, 59))
+                    label.background = gradient(intArrayOf(Color.rgb(26, 40, 83), Color.rgb(12, 20, 45)), 6, Color.rgb(174, 140, 68))
                     return label
                 }
                 override fun getView(position: Int, convertView: View?, parent: ViewGroup): View = styled(position, convertView, false)
@@ -299,7 +299,7 @@ class MainActivity : Activity() {
                 override fun getView(position: Int, convertView: View?, parent: ViewGroup): View = styled(position, convertView, false)
                 override fun getDropDownView(position: Int, convertView: View?, parent: ViewGroup): View = styled(position, convertView, true)
             }
-            view.setPopupBackgroundDrawable(gradient(intArrayOf(Color.rgb(65, 46, 31), Color.rgb(29, 23, 19)), 10, Color.rgb(255, 207, 104)))
+            view.setPopupBackgroundDrawable(gradient(intArrayOf(Color.rgb(18, 29, 60), Color.rgb(8, 13, 29)), 10, Color.rgb(255, 199, 70)))
             view.minimumHeight = (72 * resources.displayMetrics.density).toInt()
             view.setPadding(0, 0, 0, 0)
             view.setSelection(items.indexOf(selected).takeIf { it >= 0 } ?: 0)
@@ -325,7 +325,7 @@ class MainActivity : Activity() {
             includeFontPadding = true
             setSingleLine(true)
             setPadding(16, 14, 16, 14)
-            background = gradient(intArrayOf(Color.rgb(35, 27, 22), Color.rgb(35, 27, 22)), 8, Color.rgb(151, 105, 59))
+            background = gradient(intArrayOf(Color.rgb(9, 15, 32), Color.rgb(12, 20, 42)), 8, Color.rgb(173, 140, 72))
             visibility = if (unitValue == "Custom unit" || unitValue !in units) View.VISIBLE else View.GONE
         }
         val unitPortrait = CoopArtView(this, when (unitValue) {
