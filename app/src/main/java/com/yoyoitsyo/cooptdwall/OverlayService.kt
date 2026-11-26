@@ -203,8 +203,8 @@ class OverlayService : Service() {
             elevation = 14f * density
             contentDescription = "CoopTD floating wave timer"
         }
-        val width = (metrics.widthPixels - (16 * density).toInt()).coerceAtLeast((280 * density).toInt())
-        val height = (250 * density).toInt()
+        val width = (metrics.widthPixels - (12 * density).toInt()).coerceAtLeast(1)
+        val height = (112 * density).toInt()
         val params = WindowManager.LayoutParams(
             width,
             height,
@@ -214,7 +214,7 @@ class OverlayService : Service() {
         ).apply {
             gravity = Gravity.TOP or Gravity.START
             x = prefs.getInt("overlay_x", (8 * density).toInt()).coerceAtLeast(0)
-            y = prefs.getInt("overlay_y", (140 * density).toInt()).coerceAtLeast(0)
+            y = prefs.getInt("overlay_y", (128 * density).toInt()).coerceAtLeast(0)
             x = x.coerceAtMost((metrics.widthPixels - width).coerceAtLeast(0))
             y = y.coerceAtMost((metrics.heightPixels - height).coerceAtLeast(0))
         }
@@ -246,13 +246,12 @@ class OverlayService : Service() {
         val upcoming = reminders().filter { it.wave - it.lead > wave }.minByOrNull { it.wave - it.lead }
         val reminderLine = upcoming?.let {
             val triggerWave = it.wave - it.lead
-            val prefix = if (it.lead > 0) "HEADS-UP" else "NEXT"
-            "$prefix: ${it.unit} WAVE ${it.wave} (at ${triggerWave})"
+            "NEXT: ${it.unit} W${it.wave} · ALERT W${triggerWave}"
         } ?: "NO UPCOMING REMINDERS"
         hudView?.apply {
             waveLabel = "WAVE $wave"
             timerLabel = "GAME TIMER  $timer"
-            statusLabel = if (autoSync) "OCR SYNC  ·  LOCKED ON WAVE" else reminderLine
+            statusLabel = if (autoSync) "OCR LOCKED · $reminderLine" else reminderLine
             paused = this@OverlayService.paused
             invalidate()
         }
