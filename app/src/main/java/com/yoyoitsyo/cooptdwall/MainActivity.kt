@@ -286,10 +286,10 @@ class MainActivity : Activity() {
                 private fun styled(position: Int, convertView: View?, dropdown: Boolean): View {
                     val label = (convertView as? TextView) ?: TextView(this@MainActivity)
                     label.text = items[position]
-                    label.textSize = 12f
+                    label.textSize = 16f
                     label.setTextColor(Color.WHITE)
                     label.gravity = Gravity.CENTER_VERTICAL
-                    label.setPadding(16, 14, 16, 14)
+                    label.setPadding(10, 10, 10, 10)
                     label.background = gradient(intArrayOf(
                         if (dropdown) Color.rgb(43, 62, 112) else Color.rgb(12, 19, 39),
                         if (dropdown) Color.rgb(25, 38, 78) else Color.rgb(12, 19, 39)
@@ -350,33 +350,48 @@ class MainActivity : Activity() {
                 unitPortrait.invalidate()
             }
         }
-        rowCard.addView(TextView(this).apply {
-            text = "TARGET WAVE"; setTextColor(cyan); textSize = 13f; typeface = Typeface.DEFAULT_BOLD
-        })
-        rowCard.addView(wave, LinearLayout.LayoutParams(-1, 72))
-        rowCard.addView(TextView(this).apply {
-            text = "UNIT"; setTextColor(muted); textSize = 13f
-        })
-        val unitPicker = LinearLayout(this).apply {
+        val density = resources.displayMetrics.density
+        fun dp(value: Int) = (value * density).toInt()
+        fun fieldLabel(value: String) = TextView(this).apply {
+            text = value
+            textSize = 11f
+            letterSpacing = 0.05f
+            setTextColor(cyan)
+            typeface = Typeface.DEFAULT_BOLD
+            setPadding(2, 0, 2, 3)
+        }
+        val topRow = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
         }
-        unitPicker.addView(unitPortrait, LinearLayout.LayoutParams((72 * resources.displayMetrics.density).toInt(), (72 * resources.displayMetrics.density).toInt()).apply { rightMargin = (8 * resources.displayMetrics.density).toInt() })
-        unitPicker.addView(unit, LinearLayout.LayoutParams(0, 72, 1f))
-        rowCard.addView(unitPicker, LinearLayout.LayoutParams(-1, 76))
-        rowCard.addView(custom, LinearLayout.LayoutParams(-1, 64))
-        rowCard.addView(TextView(this).apply {
-            text = "ACTION"; setTextColor(muted); textSize = 13f
-        })
-        rowCard.addView(action, LinearLayout.LayoutParams(-1, 72))
-        rowCard.addView(TextView(this).apply {
-            text = "EARLY WARNING"; setTextColor(muted); textSize = 13f
-        })
-        rowCard.addView(lead, LinearLayout.LayoutParams(-1, 72))
+        topRow.addView(unitPortrait, LinearLayout.LayoutParams(dp(68), dp(76)).apply { rightMargin = dp(8) })
+        val waveColumn = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        waveColumn.addView(fieldLabel("WAVE"))
+        waveColumn.addView(wave, LinearLayout.LayoutParams(-1, dp(72)))
+        topRow.addView(waveColumn, LinearLayout.LayoutParams(0, -2, 1f).apply { rightMargin = dp(7) })
+        val unitColumn = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        unitColumn.addView(fieldLabel("UNIT"))
+        unitColumn.addView(unit, LinearLayout.LayoutParams(-1, dp(72)))
+        topRow.addView(unitColumn, LinearLayout.LayoutParams(0, -2, 1f))
+        rowCard.addView(topRow)
+        rowCard.addView(custom, LinearLayout.LayoutParams(-1, dp(62)).apply { topMargin = dp(6) })
+        val detailRow = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+        }
+        val actionColumn = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        actionColumn.addView(fieldLabel("ACTION"))
+        actionColumn.addView(action, LinearLayout.LayoutParams(-1, dp(66)))
+        detailRow.addView(actionColumn, LinearLayout.LayoutParams(0, -2, 1f).apply { rightMargin = dp(7) })
+        val leadColumn = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        leadColumn.addView(fieldLabel("EARLY WARNING"))
+        leadColumn.addView(lead, LinearLayout.LayoutParams(-1, dp(66)))
+        detailRow.addView(leadColumn, LinearLayout.LayoutParams(0, -2, 1f))
+        rowCard.addView(detailRow, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(7) })
         rowCard.addView(actionButton("REMOVE ALERT", false) {
             reminderRows.removeAll { it.wave === wave }
             reminderList.removeView(rowCard)
-        }, LinearLayout.LayoutParams(-1, 56).apply { topMargin = 10 })
+        }, LinearLayout.LayoutParams(-1, dp(50)).apply { topMargin = dp(8) })
         reminderRows.add(ReminderRow(wave, unit, action, lead, custom))
         reminderList.addView(rowCard, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = 9 })
     }
