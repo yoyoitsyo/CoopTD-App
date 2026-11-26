@@ -2,6 +2,8 @@ package com.yoyoitsyo.cooptdwall
 
 import android.app.Activity
 import android.content.Intent
+import android.media.projection.MediaProjectionManager
+import android.os.Build
 import android.graphics.*
 import android.graphics.drawable.ColorDrawable
 import android.net.Uri
@@ -17,6 +19,7 @@ import kotlin.math.min
  * as the settings editor while the visual home and floating HUD are rebuilt.
  */
 class GameHomeActivity : Activity() {
+    companion object { private const val REQUEST_CAPTURE = 73 }
     private lateinit var screen: CoopTDHomeView
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -28,14 +31,8 @@ class GameHomeActivity : Activity() {
             when (action) {
                 "settings", "add", "edit", "timer-settings" -> openLegacySettings()
                 "start-timer" -> startFloatingTimer()
-                "auto-sync" -> {
-                    Toast.makeText(this, "Open settings to start screen capture and OCR sync.", Toast.LENGTH_LONG).show()
-                    openLegacySettings()
-                }
-                "remove" -> {
-                    Toast.makeText(this, "Remove or edit reminders in the reminder editor.", Toast.LENGTH_SHORT).show()
-                    openLegacySettings()
-                }
+                "auto-sync" -> requestAutoSync()
+                "remove" -> openLegacySettings()
             }
         }
         setContentView(screen)
@@ -50,6 +47,33 @@ class GameHomeActivity : Activity() {
         startActivity(Intent(this, MainActivity::class.java))
     }
 
+    private fun requestAutoSync() {
+        if (!Settings.canDrawOverlays(this)) {
+            Toast.makeText(this, "Allow floating window permission, then tap Auto Sync again.", Toast.LENGTH_LONG).show()
+            startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName")))
+            return
+        }
+        val manager = getSystemService(MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
+        startActivityForResult(manager.createScreenCaptureIntent(), REQUEST_CAPTURE)
+    }
+
+    @Deprecated("Handled for the Android screen-capture permission flow")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode != REQUEST_CAPTURE) return
+        if (resultCode != RESULT_OK || data == null) {
+            Toast.makeText(this, "Screen capture was cancelled.", Toast.LENGTH_SHORT).show()
+            return
+        }
+        val serviceIntent = Intent(this, OverlayService::class.java).apply {
+            action = OverlayService.ACTION_START_SCAN
+            putExtra(OverlayService.EXTRA_RESULT_CODE, resultCode)
+            putExtra(OverlayService.EXTRA_RESULT_DATA, data)
+            putExtra(OverlayService.EXTRA_CALIBRATE, false)
+        }
+        if (Build.VERSION.SDK_INT >= 26) startForegroundService(serviceIntent) else startService(serviceIntent)
+    }
+
     private fun startFloatingTimer() {
         if (!Settings.canDrawOverlays(this)) {
             Toast.makeText(this, "Allow floating window permission, then tap timer again.", Toast.LENGTH_LONG).show()
@@ -57,7 +81,8 @@ class GameHomeActivity : Activity() {
             return
         }
         try {
-            startService(Intent(this, OverlayService::class.java).setAction(OverlayService.ACTION_START))
+            val serviceIntent = Intent(this, OverlayService::class.java).setAction(OverlayService.ACTION_START)
+            if (Build.VERSION.SDK_INT >= 26) startForegroundService(serviceIntent) else startService(serviceIntent)
             Toast.makeText(this, "Floating timer started", Toast.LENGTH_SHORT).show()
         } catch (_: Exception) {
             Toast.makeText(this, "Couldn't start floating timer. Open settings and try again.", Toast.LENGTH_LONG).show()
@@ -79,7 +104,7 @@ private class CoopTDHomeView(
     private val white = Color.rgb(248, 248, 255)
     private var sx = 1f
     private var sy = 1f
-    private var rows = emptyList<Reminder>()
+    private var rows = mutableListOf<Reminder>()
     private data class Reminder(val wave: Int, val unit: String, val action: String, val lead: Int)
 
     private fun readRows() {
@@ -94,7 +119,27 @@ private class CoopTDHomeView(
                 if (old.size >= 3) Reminder(old[0].trim().toIntOrNull() ?: return@mapNotNull null,
                     old[1].trim(), old[2].trim(), 0) else null
             }
-        }.sortedBy { it.wave }
+        }.sortedBy { it.wave }.toMutableList()
+    }
+
+    private fun saveRows() {
+        prefs.edit().putString("reminders", rows.sortedBy { it.wave }.joinToString("\\n") {
+            "${it.wave}|${it.unit}|${it.action}|${it.lead}"
+        }).apply()
+        invalidate()
+    }
+    private fun addAlert() {
+        val nextWave = ((rows.maxOfOrNull { it.wave } ?: 67) + 5).coerceAtMost(999)
+        rows.add(Reminder(nextWave, "Blue Dragon", "PLACE", 0))
+        saveRows()
+    }
+    private fun removeAlert(index: Int? = null) {
+        if (rows.isEmpty()) {
+            Toast.makeText(context, "No reminders to remove.", Toast.LENGTH_SHORT).show()
+            return
+        }
+        if (index != null && index in rows.indices) rows.removeAt(index) else rows.removeAt(rows.lastIndex)
+        saveRows()
     }
 
     override fun onDraw(canvas: Canvas) {
@@ -232,7 +277,7 @@ private class CoopTDHomeView(
                 else -> Color.rgb(255,167,65)
             }
             text(c,row.unit.uppercase().take(17),99f,top+52f,14f,unitColor)
-            text(c,"◷ ${row.lead}s BEFORE",100f,top+69f,10f,white,false)
+            text(c,if(row.lead>0) "◷ ${row.lead} WAVES EARLY" else "◷ ON TARGET WAVE",100f,top+69f,10f,white,false)
             // speaker and remove controls
             round(c,RectF(330f,top+13f,365f,top+61f),8f,Color.rgb(22,48,101),Color.rgb(150,190,255),2f)
             text(c,"◖))",347f,top+43f,17f,gold,true,Paint.Align.CENTER)
@@ -340,12 +385,25 @@ private class CoopTDHomeView(
             y in 796f..890f -> {
                 val index=((x-14f)/99f).toInt().coerceIn(0,3)
                 when(index) {
-                    0,1 -> onAction("add")
+                    0 -> addAlert()
+                    1 -> removeAlert()
                     2 -> onAction("auto-sync")
                     3 -> onAction("timer-settings")
                 }
             }
-            y in 350f..780f -> onAction("edit")
+            y in 350f..780f -> {
+                val index=((y-354f)/83f).toInt()
+                when {
+                    x>=370f -> removeAlert(index)
+                    x>=330f -> {
+                        val enabled=!prefs.getBoolean("sound",true)
+                        prefs.edit().putBoolean("sound",enabled).apply()
+                        Toast.makeText(context,if(enabled) "Reminder sounds enabled" else "Reminder sounds muted",Toast.LENGTH_SHORT).show()
+                        invalidate()
+                    }
+                    else -> onAction("edit")
+                }
+            }
             y in 130f..290f -> onAction("start-timer")
             else -> onAction("settings")
         }
