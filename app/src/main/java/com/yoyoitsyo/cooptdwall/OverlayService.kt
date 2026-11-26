@@ -215,13 +215,7 @@ class OverlayService : Service() {
                 }
             }
         }
-        header.addView(TextView(this).apply {
-            text = "✦"
-            textSize = 23f
-            gravity = Gravity.CENTER
-            setTextColor(Color.rgb(255, 199, 70))
-            typeface = android.graphics.Typeface.DEFAULT_BOLD
-        }, LinearLayout.LayoutParams((38 * resources.displayMetrics.density).toInt(), (40 * resources.displayMetrics.density).toInt()))
+        header.addView(CoopArtView(this, "badge"), LinearLayout.LayoutParams((44 * resources.displayMetrics.density).toInt(), (42 * resources.displayMetrics.density).toInt()))
         header.addView(title, LinearLayout.LayoutParams(0, 40, 1f))
         header.addView(close, LinearLayout.LayoutParams(
             (44 * resources.displayMetrics.density).toInt(),
