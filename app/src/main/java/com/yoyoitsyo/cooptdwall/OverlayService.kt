@@ -175,20 +175,20 @@ class OverlayService : Service() {
             setPadding(13, 10, 13, 10)
             background = GradientDrawable(
                 GradientDrawable.Orientation.TL_BR,
-                intArrayOf(Color.rgb(66, 45, 29), Color.rgb(25, 19, 16))
+                intArrayOf(Color.rgb(27, 39, 78), Color.rgb(8, 13, 29))
             ).apply {
                 cornerRadius = 18f * resources.displayMetrics.density
-                setStroke((1.2f * resources.displayMetrics.density).toInt(), Color.rgb(226, 169, 83))
+                setStroke((2f * resources.displayMetrics.density).toInt(), Color.rgb(255, 199, 70))
             }
             alpha = opacity
             elevation = 12f * resources.displayMetrics.density
         }
         val header = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
         val title = TextView(this).apply {
-            text = "COOP TD  •  WAVE CONTROL"
-            textSize = 10f
-            letterSpacing = 0.12f
-            setTextColor(Color.rgb(255, 213, 139))
+            text = "COOP TD  •  WALL ASSISTANT"
+            textSize = 12f
+            letterSpacing = 0.06f
+            setTextColor(Color.rgb(255, 211, 75))
             setTypeface(null, android.graphics.Typeface.BOLD)
             setPadding(2, 5, 8, 5)
         }
@@ -198,9 +198,9 @@ class OverlayService : Service() {
             gravity = Gravity.CENTER
             setTextColor(Color.WHITE)
             background = GradientDrawable().apply {
-                setColor(Color.rgb(105, 54, 32))
-                cornerRadius = 10f * resources.displayMetrics.density
-                setStroke((1f * resources.displayMetrics.density).toInt(), Color.rgb(203, 143, 76))
+                setColor(Color.rgb(150, 30, 43))
+                cornerRadius = 8f * resources.displayMetrics.density
+                setStroke((2f * resources.displayMetrics.density).toInt(), Color.rgb(255, 196, 76))
             }
             contentDescription = "Close floating timer"
             isClickable = true
@@ -216,10 +216,10 @@ class OverlayService : Service() {
             }
         }
         header.addView(TextView(this).apply {
-            text = "◆"
+            text = "✦"
             textSize = 23f
             gravity = Gravity.CENTER
-            setTextColor(Color.rgb(247, 207, 117))
+            setTextColor(Color.rgb(255, 199, 70))
             typeface = android.graphics.Typeface.DEFAULT_BOLD
         }, LinearLayout.LayoutParams((38 * resources.displayMetrics.density).toInt(), (40 * resources.displayMetrics.density).toInt()))
         header.addView(title, LinearLayout.LayoutParams(0, 40, 1f))
@@ -228,56 +228,56 @@ class OverlayService : Service() {
             (44 * resources.displayMetrics.density).toInt()
         ))
         waveText = TextView(this).apply {
-            textSize = 22f
+            textSize = 27f
             maxLines = 1
             includeFontPadding = false
-            setAutoSizeTextTypeUniformWithConfiguration(16, 22, 1, android.util.TypedValue.COMPLEX_UNIT_SP)
+            setAutoSizeTextTypeUniformWithConfiguration(18, 27, 1, android.util.TypedValue.COMPLEX_UNIT_SP)
             setTextColor(Color.WHITE)
             setTypeface(android.graphics.Typeface.create("sans-serif-black", android.graphics.Typeface.NORMAL))
             setPadding(10, 8, 10, 5)
             background = GradientDrawable(
                 GradientDrawable.Orientation.LEFT_RIGHT,
-                intArrayOf(Color.rgb(135, 77, 39), Color.rgb(76, 48, 30))
+                intArrayOf(Color.rgb(41, 91, 177), Color.rgb(18, 36, 91))
             ).apply {
                 cornerRadius = 11f * resources.displayMetrics.density
-                setStroke((1f * resources.displayMetrics.density).toInt(), Color.rgb(255, 213, 139))
+                setStroke((2f * resources.displayMetrics.density).toInt(), Color.rgb(255, 199, 70))
             }
         }
         countdownText = TextView(this).apply {
-            textSize = 16f
+            textSize = 22f
             maxLines = 1
             includeFontPadding = false
-            setAutoSizeTextTypeUniformWithConfiguration(12, 16, 1, android.util.TypedValue.COMPLEX_UNIT_SP)
-            setTextColor(Color.rgb(255, 226, 177))
+            setAutoSizeTextTypeUniformWithConfiguration(14, 22, 1, android.util.TypedValue.COMPLEX_UNIT_SP)
+            setTextColor(Color.rgb(255, 211, 45))
             setTypeface(null, android.graphics.Typeface.BOLD)
             setPadding(2, 0, 2, 4)
         }
         nextText = TextView(this).apply {
             textSize = 11f
-            setTextColor(Color.rgb(255, 207, 126))
+            setTextColor(Color.rgb(235, 245, 255))
             setPadding(10, 7, 10, 8)
             background = GradientDrawable().apply {
-                setColor(Color.rgb(39, 28, 21))
+                setColor(Color.rgb(17, 35, 70))
                 cornerRadius = 9f * resources.displayMetrics.density
-                setStroke((1f * resources.displayMetrics.density).toInt(), Color.rgb(157, 106, 60))
+                setStroke((1.5f * resources.displayMetrics.density).toInt(), Color.rgb(255, 199, 70))
             }
         }
 
         fun button(label: String, action: () -> Unit) = TextView(this).apply {
             text = label
-            textSize = 9f
+            textSize = 11f
             maxLines = 1
             includeFontPadding = false
             gravity = Gravity.CENTER
             textAlignment = View.TEXT_ALIGNMENT_CENTER
-            setTextColor(Color.rgb(255, 238, 215))
+            setTextColor(Color.rgb(245, 248, 255))
             typeface = android.graphics.Typeface.create("sans-serif-condensed", android.graphics.Typeface.BOLD)
             background = GradientDrawable(
                 GradientDrawable.Orientation.TOP_BOTTOM,
-                intArrayOf(Color.rgb(117, 74, 43), Color.rgb(57, 42, 30))
+                intArrayOf(Color.rgb(37, 89, 174), Color.rgb(17, 38, 92))
             ).apply {
                 cornerRadius = 9f * resources.displayMetrics.density
-                setStroke((1f * resources.displayMetrics.density).toInt(), Color.rgb(211, 158, 88))
+                setStroke((1.5f * resources.displayMetrics.density).toInt(), Color.rgb(255, 199, 70))
             }
             setPadding(3, 0, 3, 0)
             minWidth = 38
@@ -373,10 +373,10 @@ class OverlayService : Service() {
             (it - (SystemClock.elapsedRealtime() - syncedRemainingAt)).coerceAtLeast(0L)
         }
         countdownText?.text = when {
-            autoSync && syncedLeft != null -> "● GAME TIME  " + formatTime(syncedLeft)
-            autoSync -> "OCR LOCK · WAITING FOR GAME TIMER"
-            paused -> "PAUSED · " + formatTime(remainingWhenPaused)
-            else -> formatTime(remaining)
+            autoSync && syncedLeft != null -> "GAME TIMER  " + formatTime(syncedLeft)
+            autoSync -> "GAME TIMER  ·  WAITING"
+            paused -> "PAUSED  ·  " + formatTime(remainingWhenPaused)
+            else -> "GAME TIMER  " + formatTime(remaining)
         }
         val upcoming = reminders().filter { it.wave - it.lead > wave }.minByOrNull { it.wave - it.lead }
         val reminderLine = upcoming?.let {
@@ -384,7 +384,13 @@ class OverlayService : Service() {
             val prefix = if (it.lead > 0) "HEADS-UP" else "NEXT"
             "$prefix: ${it.action} ${it.unit} · WAVE ${it.wave} (alert at $triggerWave)"
         } ?: "No upcoming reminders"
-        nextText?.text = if (autoSync) "● AUTO SYNC ON  ·  $reminderLine" else reminderLine
+        nextText?.text = if (autoSync) "● OCR SYNC  ·  LOCKED ON WAVE\n$reminderLine" else reminderLine
+        nextText?.background = GradientDrawable().apply {
+            setColor(if (autoSync) Color.rgb(17, 104, 37) else Color.rgb(17, 35, 70))
+            cornerRadius = 9f * resources.displayMetrics.density
+            setStroke((1.5f * resources.displayMetrics.density).toInt(),
+                if (autoSync) Color.rgb(102, 255, 110) else Color.rgb(255, 199, 70))
+        }
         if (Build.VERSION.SDK_INT >= 26) {
             val note = if (autoSync) "Wave $wave · OCR sync (manual timer off)" else "Wave $wave · " + formatTime(remaining)
             getSystemService(NotificationManager::class.java).notify(17, notification(note))
