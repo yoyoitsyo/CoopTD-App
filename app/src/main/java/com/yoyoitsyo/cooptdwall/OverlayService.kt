@@ -430,13 +430,23 @@ class OverlayService : Service() {
             private var startY = 0f
             private var drawing = false
             private var hasSelection = false
+            private var userAdjusted = false
             private val buttonRect = RectF()
+
+            override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
+                super.onSizeChanged(w, h, oldw, oldh)
+                if (!userAdjusted && w > 0 && h > 0) {
+                    // Default to the top-center wave label plus the nearby game countdown seen in the run video.
+                    rect.set(w * 0.22f, h * 0.02f, w * 0.78f, h * 0.26f)
+                    hasSelection = true
+                }
+            }
 
             override fun onDraw(canvas: Canvas) {
                 super.onDraw(canvas)
                 canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), shade)
-                canvas.drawText("DRAG AROUND WAVE + COUNTDOWN", 22f * density, height - 112f * density, white)
-                canvas.drawText("Include the wave label and its seconds timer.", 22f * density, height - 94f * density, muted)
+                canvas.drawText("TOP-CENTER WAVE + GAME TIMER", 22f * density, height - 112f * density, white)
+                canvas.drawText("Default frame matches the wave position in your video.", 22f * density, height - 94f * density, muted)
                 if (hasSelection || drawing) {
                     canvas.drawRoundRect(rect, 8f * density, 8f * density, fill)
                     canvas.drawRoundRect(rect, 8f * density, 8f * density, border)
