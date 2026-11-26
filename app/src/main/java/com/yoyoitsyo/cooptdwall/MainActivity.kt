@@ -30,10 +30,10 @@ class MainActivity : Activity() {
     private lateinit var vibration: CheckBox
     private lateinit var soundStyle: Spinner
 
-    private val bg = Color.rgb(22, 18, 15)
-    private val panel = Color.rgb(55, 42, 30)
-    private val cyan = Color.rgb(238, 174, 75)
-    private val muted = Color.rgb(190, 174, 145)
+    private val bg = Color.rgb(12, 17, 37)
+    private val panel = Color.rgb(24, 31, 54)
+    private val cyan = Color.rgb(255, 199, 70)
+    private val muted = Color.rgb(180, 194, 225)
     private data class ReminderRow(val wave: Spinner, val unit: Spinner, val action: Spinner, val lead: Spinner, val custom: EditText)
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -41,30 +41,31 @@ class MainActivity : Activity() {
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(16, 16, 16, 30)
-            background = gradient(intArrayOf(Color.rgb(38, 27, 20), Color.rgb(18, 16, 14)), 0)
+            background = gradient(intArrayOf(Color.rgb(43, 38, 105), Color.rgb(17, 24, 52), Color.rgb(9, 13, 29)), 0)
         }
 
         val hero = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(18, 18, 18, 18)
-            background = gradient(intArrayOf(Color.rgb(112, 65, 32), Color.rgb(54, 38, 25)), 10, Color.rgb(226, 174, 86))
+            background = gradient(intArrayOf(Color.rgb(50, 58, 132), Color.rgb(20, 29, 62), Color.rgb(13, 18, 39)), 12, Color.rgb(255, 199, 70))
         }
         hero.addView(TextView(this).apply {
             text = "COOP TD"
-            textSize = 27f
-            letterSpacing = 0.06f
-            setTextColor(Color.rgb(255, 221, 143))
+            textSize = 34f
+            letterSpacing = 0.025f
+            setTextColor(Color.rgb(255, 202, 48))
             typeface = Typeface.create("sans-serif-black", Typeface.BOLD)
             setShadowLayer(2f, 1f, 2f, Color.rgb(35, 25, 12))
         })
         hero.addView(TextView(this).apply {
-            text = "BATTLE COMPANION  •  WAVE CONTROL"
-            textSize = 11f
-            letterSpacing = 0.10f
-            setTextColor(Color.rgb(239, 211, 165))
+            text = "WALL ASSISTANT  •  WAVE CONTROL"
+            textSize = 13f
+            letterSpacing = 0.07f
+            setTextColor(Color.rgb(235, 241, 255))
             typeface = Typeface.DEFAULT_BOLD
             setPadding(1, 5, 1, 0)
         })
+        hero.addView(CoopArtView(this, "banner"), LinearLayout.LayoutParams(-1, (82 * resources.displayMetrics.density).toInt()).apply { topMargin = 7 })
         root.addView(hero, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = 16 })
 
         root.addView(sectionTitle("WAVE TIMING"))
@@ -174,16 +175,17 @@ class MainActivity : Activity() {
     private fun card() = LinearLayout(this).apply {
         orientation = LinearLayout.VERTICAL
         setPadding(15, 14, 15, 14)
-        background = gradient(intArrayOf(Color.rgb(65, 48, 35), Color.rgb(39, 30, 24)), 10, Color.rgb(151, 105, 59))
+        background = gradient(intArrayOf(Color.rgb(29, 38, 66), Color.rgb(15, 21, 40)), 10, Color.rgb(211, 165, 72))
     }
 
     private fun sectionTitle(textValue: String) = TextView(this).apply {
         text = textValue
-        textSize = 12f
-        letterSpacing = 0.14f
-        setTextColor(cyan)
-        typeface = Typeface.DEFAULT_BOLD
-        setPadding(3, 3, 3, 9)
+        textSize = 14f
+        letterSpacing = 0.10f
+        setTextColor(if (textValue.contains("REMINDER", true)) Color.rgb(255, 218, 88) else cyan)
+        typeface = Typeface.create("sans-serif-black", Typeface.BOLD)
+        setPadding(12, 9, 12, 9)
+        background = if (textValue.contains("REMINDER", true)) gradient(intArrayOf(Color.rgb(164, 35, 44), Color.rgb(85, 22, 39)), 8, Color.rgb(255, 190, 70)) else gradient(intArrayOf(Color.rgb(25, 36, 69), Color.rgb(15, 22, 44)), 7, Color.rgb(176, 140, 68))
     }
 
     private fun addField(parent: LinearLayout, title: String, field: EditText) {
@@ -203,7 +205,7 @@ class MainActivity : Activity() {
         textSize = 13f
         setTextColor(Color.WHITE)
         setPadding(12, 5, 12, 5)
-        background = gradient(intArrayOf(Color.rgb(35, 27, 22), Color.rgb(35, 27, 22)), 8, Color.rgb(151, 105, 59))
+        background = gradient(intArrayOf(Color.rgb(9, 15, 32), Color.rgb(12, 20, 42)), 8, Color.rgb(173, 140, 72))
     }
 
     private fun actionButton(label: String, primary: Boolean, action: () -> Unit) = TextView(this).apply {
@@ -216,9 +218,9 @@ class MainActivity : Activity() {
         includeFontPadding = true
         minHeight = 0
         setPadding(10, 6, 10, 6)
-        setTextColor(if (primary) Color.rgb(47, 35, 17) else Color.rgb(244, 231, 190))
-        background = if (primary) gradient(intArrayOf(Color.rgb(255, 204, 105), Color.rgb(190, 112, 42)), 8, Color.rgb(255, 226, 157))
-            else gradient(intArrayOf(Color.rgb(83, 66, 48), Color.rgb(48, 38, 30)), 8, Color.rgb(151, 105, 59))
+        setTextColor(if (primary) Color.rgb(255, 230, 145) else Color.rgb(231, 239, 255))
+        background = if (primary) gradient(intArrayOf(Color.rgb(40, 105, 210), Color.rgb(18, 51, 126)), 8, Color.rgb(255, 207, 74))
+            else gradient(intArrayOf(Color.rgb(34, 52, 94), Color.rgb(17, 29, 58)), 8, Color.rgb(184, 146, 70))
         isClickable = true
         isFocusable = true
         setOnClickListener { action() }
@@ -276,7 +278,7 @@ class MainActivity : Activity() {
         val rowCard = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(14, 14, 14, 14)
-            background = gradient(intArrayOf(Color.rgb(74, 53, 37), Color.rgb(42, 31, 24)), 7, Color.rgb(170, 117, 65))
+            background = gradient(intArrayOf(Color.rgb(31, 43, 75), Color.rgb(13, 20, 40)), 9, Color.rgb(218, 172, 76))
         }
         fun spinner(items: List<String>, selected: String): Spinner {
             val view = Spinner(this)
@@ -289,9 +291,9 @@ class MainActivity : Activity() {
                     label.gravity = Gravity.CENTER_VERTICAL
                     label.setPadding(16, 14, 16, 14)
                     label.background = gradient(intArrayOf(
-                        if (dropdown) Color.rgb(95, 65, 39) else Color.rgb(39, 29, 23),
-                        if (dropdown) Color.rgb(68, 47, 32) else Color.rgb(39, 29, 23)
-                    ), 6, Color.rgb(139, 120, 75))
+                        if (dropdown) Color.rgb(43, 62, 112) else Color.rgb(12, 19, 39),
+                        if (dropdown) Color.rgb(25, 38, 78) else Color.rgb(12, 19, 39)
+                    ), 6, Color.rgb(169, 139, 75))
                     return label
                 }
                 override fun getView(position: Int, convertView: View?, parent: ViewGroup): View = styled(position, convertView, false)
@@ -326,29 +328,26 @@ class MainActivity : Activity() {
             background = gradient(intArrayOf(Color.rgb(35, 27, 22), Color.rgb(35, 27, 22)), 8, Color.rgb(151, 105, 59))
             visibility = if (unitValue == "Custom unit" || unitValue !in units) View.VISIBLE else View.GONE
         }
-        val unitPortrait = TextView(this).apply {
-            text = when (unitValue) {
-                "Blue Dragon" -> "✦"
-                "Ivy Whisper" -> "✧"
-                "Witch Doctor" -> "❖"
-                else -> "★"
-            }
-            textSize = 25f
-            gravity = Gravity.CENTER
-            typeface = Typeface.create("sans-serif-black", Typeface.BOLD)
-            setTextColor(Color.rgb(255, 220, 135))
-            background = gradient(intArrayOf(Color.rgb(104, 67, 39), Color.rgb(49, 35, 26)), 6, Color.rgb(220, 163, 83))
+        val unitPortrait = CoopArtView(this, when (unitValue) {
+            "Blue Dragon" -> "dragon"
+            "Ivy Whisper" -> "ivy"
+            "Witch Doctor" -> "witch"
+            else -> "golem"
+        }).apply {
+            contentDescription = "${unitValue} portrait"
+            background = gradient(intArrayOf(Color.rgb(28, 58, 125), Color.rgb(13, 25, 58)), 6, Color.rgb(255, 199, 70))
         }
         unit.onItemSelectedListener = object : android.widget.AdapterView.OnItemSelectedListener {
             override fun onNothingSelected(parent: android.widget.AdapterView<*>?) {}
             override fun onItemSelected(parent: android.widget.AdapterView<*>?, view: View?, position: Int, id: Long) {
                 custom.visibility = if (units[position] == "Custom unit") View.VISIBLE else View.GONE
-                unitPortrait.text = when (units[position]) {
-                    "Blue Dragon" -> "DR"
-                    "Ivy Whisper" -> "IV"
-                    "Witch Doctor" -> "WD"
-                    else -> "★"
+                unitPortrait.artType = when (units[position]) {
+                    "Blue Dragon" -> "dragon"
+                    "Ivy Whisper" -> "ivy"
+                    "Witch Doctor" -> "witch"
+                    else -> "golem"
                 }
+                unitPortrait.invalidate()
             }
         }
         rowCard.addView(TextView(this).apply {
