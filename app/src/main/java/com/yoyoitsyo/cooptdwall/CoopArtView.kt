@@ -70,6 +70,27 @@ class CoopArtView @JvmOverloads constructor(
             val x = 12f + i * 25f
             c.drawCircle(x, 18f + (i % 3) * 13f, 1.8f, brush(Color.rgb(255, 226, 145)))
         }
+        // Layered gothic skyline like the night-castle backdrop in the user's reference.
+        val castleInk = Color.rgb(31, 29, 73)
+        val castleEdge = Color.rgb(53, 47, 105)
+        val towers = listOf(
+            Triple(12f, 78f, 24f), Triple(45f, 58f, 28f),
+            Triple(91f, 83f, 22f), Triple(132f, 47f, 34f),
+            Triple(181f, 73f, 25f), Triple(218f, 55f, 28f),
+            Triple(263f, 82f, 22f)
+        )
+        for ((x, top, w) in towers) {
+            c.drawRect(x, top, x + w, 140f, brush(castleInk))
+            c.drawRect(x + 3f, top + 5f, x + w - 3f, 140f, brush(castleEdge))
+            path.reset()
+            path.moveTo(x - 5f, top + 2f)
+            path.lineTo(x + w / 2f, top - 20f)
+            path.lineTo(x + w + 5f, top + 2f)
+            path.close()
+            c.drawPath(path, brush(castleInk))
+            c.drawRect(x + w * .30f, top + 14f, x + w * .48f, top + 23f, brush(Color.rgb(255, 183, 91)))
+            c.drawRect(x + w * .60f, top + 29f, x + w * .78f, top + 38f, brush(Color.rgb(255, 183, 91)))
+        }
         path.reset()
         path.moveTo(0f, 122f); path.lineTo(48f, 96f); path.lineTo(91f, 119f)
         path.lineTo(148f, 91f); path.lineTo(208f, 119f); path.lineTo(263f, 96f)
