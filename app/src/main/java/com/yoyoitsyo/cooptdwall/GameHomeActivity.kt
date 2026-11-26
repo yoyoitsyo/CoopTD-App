@@ -312,9 +312,16 @@ private class CoopTDHomeView(
         }
         shown.forEachIndexed { index, row ->
             val top=start+index*rowH
-            round(c,RectF(14f,top,406f,top+77f),12f,Color.rgb(12,19,38),Color.rgb(191,151,73),2f)
-            // portrait tile and custom fantasy unit badge
-            round(c,RectF(19f,top+5f,88f,top+72f),10f,Color.rgb(25,38,78),Color.rgb(72,113,206),2f)
+            if (referenceArt != null) {
+                // Reuse the actual ornate card edge from the supplied design, then mask its sample text.
+                ReferenceArt.drawCrop(c,referenceArt,RectF(25f,350f,645f,490f),RectF(14f,top,406f,top+77f),
+                    fill(Color.WHITE).apply { isFilterBitmap=true })
+                round(c,RectF(94f,top+7f,306f,top+70f),7f,Color.rgb(12,19,38))
+                round(c,RectF(278f,top+7f,401f,top+70f),7f,Color.rgb(12,19,38))
+            } else {
+                round(c,RectF(14f,top,406f,top+77f),12f,Color.rgb(12,19,38),Color.rgb(191,151,73),2f)
+                round(c,RectF(19f,top+5f,88f,top+72f),10f,Color.rgb(25,38,78),Color.rgb(72,113,206),2f)
+            }
             if (referenceArt != null) {
                 ReferenceArt.drawCrop(c, referenceArt, portraitSource(row.unit), RectF(19f,top+5f,88f,top+72f),
                     fill(Color.WHITE).apply { isFilterBitmap = true })
@@ -347,11 +354,11 @@ private class CoopTDHomeView(
     private fun portraitSource(unit: String): RectF {
         val name=unit.lowercase()
         return when {
-            "reaper" in name -> RectF(28f,345f,232f,487f)
-            "orc" in name -> RectF(28f,495f,232f,640f)
-            "stone" in name || "giant" in name -> RectF(28f,665f,232f,785f)
-            "red dragon" in name || "dragon" in name -> RectF(28f,790f,232f,925f)
-            "void" in name || "knight" in name -> RectF(28f,925f,232f,1060f)
+            "reaper" in name -> RectF(38f,355f,218f,480f)
+            "orc" in name -> RectF(38f,505f,218f,630f)
+            "stone" in name || "giant" in name -> RectF(38f,675f,218f,775f)
+            "red dragon" in name || "dragon" in name -> RectF(38f,800f,218f,915f)
+            "void" in name || "knight" in name -> RectF(38f,935f,218f,1050f)
             else -> RectF(28f,495f,232f,640f)
         }
     }
