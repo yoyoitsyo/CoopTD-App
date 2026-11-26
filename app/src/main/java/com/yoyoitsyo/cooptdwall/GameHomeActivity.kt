@@ -123,7 +123,7 @@ private class CoopTDHomeView(
     }
 
     private fun saveRows() {
-        prefs.edit().putString("reminders", rows.sortedBy { it.wave }.joinToString("\\n") {
+        prefs.edit().putString("reminders", rows.sortedBy { it.wave }.joinToString("\n") {
             "${it.wave}|${it.unit}|${it.action}|${it.lead}"
         }).apply()
         invalidate()
