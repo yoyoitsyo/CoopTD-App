@@ -19,7 +19,7 @@ import kotlin.math.min
  * as the settings editor while the visual home and floating HUD are rebuilt.
  */
 class GameHomeActivity : Activity() {
-    companion object { private const val REQUEST_CAPTURE = 73 }
+    companion object { private const val REQUEST_CAPTURE = 73; private const val REQUEST_ARTWORK = 74 }
     private lateinit var screen: CoopTDHomeView
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -30,11 +30,13 @@ class GameHomeActivity : Activity() {
         screen = CoopTDHomeView(this) { action ->
             when (action) {
                 "settings", "add", "edit", "timer-settings" -> openLegacySettings()
+                "artwork" -> requestReferenceArtwork()
                 "start-timer" -> startFloatingTimer()
                 "auto-sync" -> requestAutoSync()
                 "remove" -> openLegacySettings()
             }
         }
+        ReferenceArt.load(this)?.let { screen.setReferenceArt(it) }
         setContentView(screen)
     }
 
@@ -45,6 +47,15 @@ class GameHomeActivity : Activity() {
 
     private fun openLegacySettings() {
         startActivity(Intent(this, MainActivity::class.java))
+    }
+
+    private fun requestReferenceArtwork() {
+        val pick = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+            addCategory(Intent.CATEGORY_OPENABLE)
+            type = "image/*"
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION)
+        }
+        startActivityForResult(pick, REQUEST_ARTWORK)
     }
 
     private fun requestAutoSync() {
@@ -60,6 +71,22 @@ class GameHomeActivity : Activity() {
     @Deprecated("Handled for the Android screen-capture permission flow")
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == REQUEST_ARTWORK) {
+            val uri = data?.data
+            if (resultCode == RESULT_OK && uri != null) {
+                try {
+                    contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                } catch (_: Exception) {}
+                getSharedPreferences("wall", MODE_PRIVATE).edit()
+                    .putString(ReferenceArt.PREF_URI, uri.toString()).apply()
+                val bitmap = ReferenceArt.decodeUri(this, uri)
+                if (bitmap != null) {
+                    screen.setReferenceArt(bitmap)
+                    Toast.makeText(this, "Reference artwork loaded. Your live timer stays active.", Toast.LENGTH_LONG).show()
+                } else Toast.makeText(this, "Could not read that image.", Toast.LENGTH_LONG).show()
+            }
+            return
+        }
         if (requestCode != REQUEST_CAPTURE) return
         if (resultCode != RESULT_OK || data == null) {
             Toast.makeText(this, "Screen capture was cancelled.", Toast.LENGTH_SHORT).show()
@@ -104,6 +131,8 @@ private class CoopTDHomeView(
     private val white = Color.rgb(248, 248, 255)
     private var sx = 1f
     private var sy = 1f
+    private var referenceArt: Bitmap? = null
+    fun setReferenceArt(bitmap: Bitmap) { referenceArt = bitmap; invalidate() }
     private var rows = mutableListOf<Reminder>()
     private data class Reminder(val wave: Int, val unit: String, val action: String, val lead: Int)
 
@@ -184,6 +213,13 @@ private class CoopTDHomeView(
     }
 
     private fun drawBackdrop(c: Canvas) {
+        referenceArt?.let { art ->
+            ReferenceArt.drawCrop(c, art, RectF(710f, 465f, 1213f, 1296f), RectF(0f, 0f, 420f, 900f),
+                fill(Color.WHITE).apply { isFilterBitmap = true })
+            c.drawRect(0f, 0f, 420f, 900f, fill(Color.argb(112, 4, 7, 22)))
+            c.drawRect(0f, 0f, 235f, 900f, fill(Color.argb(152, 5, 9, 25)))
+            return
+        }
         p.shader = LinearGradient(0f, 0f, 420f, 900f,
             intArrayOf(Color.rgb(42, 35, 112), Color.rgb(25, 31, 83), Color.rgb(9, 13, 31)),
             null, Shader.TileMode.CLAMP)
@@ -224,15 +260,20 @@ private class CoopTDHomeView(
         // Gear/settings button
         round(c, RectF(14f,14f,61f,61f),10f,Color.rgb(20,32,68),Color.rgb(147,190,255),3f)
         text(c,"⚙",37.5f,47f,31f,white,true,Paint.Align.CENTER)
-        // Chunky split-color logo
-        text(c,"COOP",76f,66f,43f,Color.rgb(255,196,38))
-        text(c,"TD",190f,66f,43f,Color.rgb(242,53,45))
-        text(c,"WALL ASSISTANT",78f,98f,23f,white)
-        text(c,"WAVE TIMER  •  REMINDER CONTROL",79f,119f,9.5f,Color.rgb(195,209,255),true)
+        // Use the exact logo artwork from the supplied reference when it has been imported.
+        if (referenceArt != null) {
+            ReferenceArt.drawCrop(c, referenceArt, RectF(62f, 8f, 480f, 260f), RectF(68f, 8f, 300f, 126f),
+                fill(Color.WHITE).apply { isFilterBitmap = true })
+        } else {
+            text(c,"COOP",76f,66f,43f,Color.rgb(255,196,38))
+            text(c,"TD",190f,66f,43f,Color.rgb(242,53,45))
+            text(c,"WALL ASSISTANT",78f,98f,23f,white)
+            text(c,"WAVE TIMER  •  REMINDER CONTROL",79f,119f,9.5f,Color.rgb(195,209,255),true)
+        }
         // tiny status icons
         round(c, RectF(324f,24f,404f,51f),13f,Color.rgb(8,24,40),Color.rgb(81,206,118),1.5f)
         c.drawCircle(339f,37f,6f,fill(Color.rgb(65,235,99)))
-        text(c,"READY",350f,41f,10f,white)
+        text(c,"ART",350f,41f,10f,white)
     }
 
     private fun drawHud(c: Canvas) {
@@ -240,7 +281,10 @@ private class CoopTDHomeView(
         round(c,r,18f,Color.rgb(11,17,35),Color.rgb(255,197,72),4f)
         // inner bevel and top highlight
         round(c,RectF(20f,138f,400f,280f),14f,Color.rgb(19,31,63),Color.rgb(106,134,205),1.5f)
-        drawKnight(c,62f,208f,.78f)
+        if (referenceArt != null) {
+            ReferenceArt.drawCrop(c, referenceArt, RectF(625f, 82f, 815f, 450f), RectF(22f, 140f, 110f, 274f),
+                fill(Color.WHITE).apply { isFilterBitmap = true })
+        } else drawKnight(c,62f,208f,.78f)
         text(c,"WAVE",142f,177f,15f,Color.rgb(186,210,255))
         text(c,"12",210f,179f,42f,white)
         text(c,"GAME TIMER",143f,207f,13f,white)
@@ -254,7 +298,10 @@ private class CoopTDHomeView(
     private fun drawReminders(c: Canvas) {
         // red, beveled header
         round(c,RectF(14f,300f,406f,345f),10f,Color.rgb(126,22,35),Color.rgb(255,191,67),3f)
-        text(c,"WAVE REMINDERS",28f,329f,20f,Color.rgb(255,216,71))
+        if (referenceArt != null) {
+            ReferenceArt.drawCrop(c, referenceArt, RectF(18f, 260f, 570f, 355f), RectF(14f, 292f, 406f, 350f),
+                fill(Color.WHITE).apply { isFilterBitmap = true })
+        } else text(c,"WAVE REMINDERS",28f,329f,20f,Color.rgb(255,216,71))
         val shown=rows.take(5)
         val start=354f
         val rowH=83f
@@ -268,7 +315,10 @@ private class CoopTDHomeView(
             round(c,RectF(14f,top,406f,top+77f),12f,Color.rgb(12,19,38),Color.rgb(191,151,73),2f)
             // portrait tile and custom fantasy unit badge
             round(c,RectF(19f,top+5f,88f,top+72f),10f,Color.rgb(25,38,78),Color.rgb(72,113,206),2f)
-            drawUnit(c,row.unit,53f,top+39f,.50f)
+            if (referenceArt != null) {
+                ReferenceArt.drawCrop(c, referenceArt, portraitSource(row.unit), RectF(19f,top+5f,88f,top+72f),
+                    fill(Color.WHITE).apply { isFilterBitmap = true })
+            } else drawUnit(c,row.unit,53f,top+39f,.50f)
             text(c,"WAVE ${row.wave}",99f,top+29f,20f,white)
             val unitColor=when(row.unit.lowercase()) {
                 "blue dragon" -> Color.rgb(80,185,255)
@@ -279,15 +329,49 @@ private class CoopTDHomeView(
             text(c,row.unit.uppercase().take(17),99f,top+52f,14f,unitColor)
             text(c,if(row.lead>0) "◷ ${row.lead} WAVES EARLY" else "◷ ON TARGET WAVE",100f,top+69f,10f,white,false)
             // speaker and remove controls
-            round(c,RectF(330f,top+13f,365f,top+61f),8f,Color.rgb(22,48,101),Color.rgb(150,190,255),2f)
-            text(c,"◖))",347f,top+43f,17f,gold,true,Paint.Align.CENTER)
-            round(c,RectF(370f,top+13f,401f,top+61f),8f,Color.rgb(91,18,31),Color.rgb(255,130,112),2f)
-            text(c,"×",385.5f,top+46f,31f,Color.rgb(255,76,66),true,Paint.Align.CENTER)
+            if (referenceArt != null) {
+                ReferenceArt.drawCrop(c, referenceArt, RectF(450f, 375f, 530f, 445f), RectF(310f,top+13f,356f,top+61f),
+                    fill(Color.WHITE).apply { isFilterBitmap = true })
+                ReferenceArt.drawCrop(c, referenceArt, RectF(540f, 375f, 620f, 445f), RectF(360f,top+13f,401f,top+61f),
+                    fill(Color.WHITE).apply { isFilterBitmap = true })
+            } else {
+                round(c,RectF(330f,top+13f,365f,top+61f),8f,Color.rgb(22,48,101),Color.rgb(150,190,255),2f)
+                text(c,"◖))",347f,top+43f,17f,gold,true,Paint.Align.CENTER)
+                round(c,RectF(370f,top+13f,401f,top+61f),8f,Color.rgb(91,18,31),Color.rgb(255,130,112),2f)
+                text(c,"×",385.5f,top+46f,31f,Color.rgb(255,76,66),true,Paint.Align.CENTER)
+            }
         }
         if (rows.size>5) text(c,"+${rows.size-5} more alerts in settings",24f,775f,10f,white,false)
     }
 
+    private fun portraitSource(unit: String): RectF {
+        val name=unit.lowercase()
+        return when {
+            "reaper" in name -> RectF(28f,345f,232f,487f)
+            "orc" in name -> RectF(28f,495f,232f,640f)
+            "stone" in name || "giant" in name -> RectF(28f,665f,232f,785f)
+            "red dragon" in name || "dragon" in name -> RectF(28f,790f,232f,925f)
+            "void" in name || "knight" in name -> RectF(28f,925f,232f,1060f)
+            else -> RectF(28f,495f,232f,640f)
+        }
+    }
+
     private fun drawBottomDock(c: Canvas) {
+        referenceArt?.let { art ->
+            val source = listOf(
+                RectF(30f,1070f,192f,1205f), RectF(193f,1070f,348f,1205f),
+                RectF(348f,1068f,550f,1207f), RectF(550f,1070f,720f,1205f)
+            )
+            val gap=6f
+            val w=(392f-gap*3)/4f
+            for(i in 0..3) {
+                val x=14f+i*(w+gap)
+                ReferenceArt.drawCrop(c,art,source[i],RectF(x,796f,x+w,883f),
+                    fill(Color.WHITE).apply { isFilterBitmap=true })
+            }
+            text(c,"COOP TOGETHER  •  DEFEND FOREVER",210f,897f,10f,Color.rgb(255,190,82),true,Paint.Align.CENTER)
+            return
+        }
         // Four large game-like deck buttons anchored at bottom.
         val y=796f
         val gap=6f
@@ -382,6 +466,7 @@ private class CoopTDHomeView(
         val x=event.x/sx; val y=event.y/sy
         when {
             x<68f && y<70f -> onAction("settings")
+            x>=320f && y<70f -> onAction("artwork")
             y in 796f..890f -> {
                 val index=((x-14f)/99f).toInt().coerceIn(0,3)
                 when(index) {
