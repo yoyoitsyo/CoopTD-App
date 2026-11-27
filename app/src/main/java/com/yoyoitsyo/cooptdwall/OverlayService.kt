@@ -321,37 +321,53 @@ class OverlayService : Service() {
                 }
                 textRecognizer.process(InputImage.fromBitmap(crop, 0))
                     .addOnSuccessListener { result ->
+                        val nowSync = SystemClock.elapsedRealtime()
                         val detected = parseWaveNumber(result.text)
                         val gameRemaining = parseRemainingMillis(result.text)
+
+                        // Keep the last trusted wave during occlusion. If the timer is still
+                        // visible, refresh it independently; if both are covered, the HUD
+                        // extrapolates from the last OCR sample until the board is readable.
+                        if (gameRemaining != null) {
+                            syncedRemainingMs = gameRemaining
+                            syncedRemainingAt = nowSync
+                        }
+
+                        var waveChanged = false
                         if (detected != null && detected in 0..200) {
-                            if (detected == pendingWave) pendingWaveCount++ else {
+                            if (detected == wave) {
+                                // A clear read of the current wave restores confidence instantly.
                                 pendingWave = detected
-                                pendingWaveCount = 1
-                            }
-                            if (pendingWaveCount >= 2) {
-                                val nowSync = SystemClock.elapsedRealtime()
-                                val waveChanged = detected != wave
-                                if (waveChanged) {
-                                    wave = detected
-                                    paused = false
-                                    lastAlert = -1
-                                    pauseButton?.text = "PAUSE"
-                                    // Fire reminders from the game-confirmed wave, not the local timer.
-                                    checkReminder()
+                                pendingWaveCount = 2
+                            } else {
+                                if (detected == pendingWave) pendingWaveCount++ else {
+                                    pendingWave = detected
+                                    pendingWaveCount = 1
                                 }
-                                // OCR owns the displayed clock while auto-sync is active.
-                                // Never write OCR samples back into the manual timer's clock.
-                                if (gameRemaining != null) {
-                                    syncedRemainingMs = gameRemaining
-                                    syncedRemainingAt = nowSync
-                                }
-                                if (waveChanged || gameRemaining != null) {
-                                    nextText?.text = if (gameRemaining != null)
-                                        "● SYNCED  ·  WAVE $wave + GAME TIMER"
-                                    else "● SYNCED TO GAME  ·  WAVE $wave"
-                                    refresh()
+                                // Confirm a transition with two matching reads to reject OCR noise.
+                                if (pendingWaveCount >= 2) {
+                                    waveChanged = detected != wave
+                                    if (waveChanged) {
+                                        wave = detected
+                                        paused = false
+                                        lastAlert = -1
+                                        pauseButton?.text = "PAUSE"
+                                        // Reminders follow the game-confirmed wave.
+                                        checkReminder()
+                                    }
                                 }
                             }
+                        } else {
+                            // Do not clear the trusted wave when effects/UI cover the label.
+                            pendingWaveCount = 0
+                        }
+
+                        if (waveChanged || gameRemaining != null) {
+                            nextText?.text = if (gameRemaining != null)
+                                "● SYNCED  ·  WAVE $wave + GAME TIMER"
+                            else
+                                "● SYNCED TO GAME  ·  WAVE $wave"
+                            refresh()
                         }
                     }
                     .addOnFailureListener { }
